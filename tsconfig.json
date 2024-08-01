@@ -1,0 +1,12 @@
+{
+    "compilerOptions": {
+        "strict": true,
+        "target": "ESNext",
+        "module": "es6",
+        "sourceMap": true,
+        "jsx": "react",
+        "jsxFactory": "preact.h",
+        "verbatimModuleSyntax": true,
+    },
+    "exclude": ["vendor/preact/package/**"],
+}
