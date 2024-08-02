@@ -141,7 +141,7 @@ function App(props: { db: IDBDatabase, all_ants0: storage.Ant[] }) {
             <input
                 type="text"
                 value={seed}
-                onChange={(e) => set_seed(e.currentTarget.value)}
+                onInput={(e) => set_seed(e.currentTarget.value)}
                 style={{ width: "60px", backgroundColor: "inherit" }}
             />
         </span>
