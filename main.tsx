@@ -86,6 +86,7 @@ function App(props: { db: IDBDatabase, all_ants0: storage.Ant[] }) {
             </tbody>
         </table>
         <br/>
+        Add ant:<br/>
         <FileInput on_upload={async (name, contents) => {
             if (name.endsWith(".ant")) {
                 name = name.slice(0, -4);
@@ -119,10 +120,24 @@ function App(props: { db: IDBDatabase, all_ants0: storage.Ant[] }) {
         </table>
     </>;
 
+    let management = <>
+        <h3>Run game</h3>
+        <label>Seed</label><br/>
+        <input type="text" value="42" style={{ width: "60px" }}/>
+        <br/>
+        <br/>
+        <input type="button" value="Run" onClick={() => {
+            console.log("Run", red_ant_id, black_ant_id, selected_world);
+        }}/>
+    </>;
+
     return (
-        <div style={{ display: "flex", justifyContent: "flex-start" }}>
+        <div style={{ display: "flex", justifyContent: "flex-start", gap: "20px" }}>
             <div style={{ flexBasis: "auto" }}>
                 {ants}
+            </div>
+            <div style={{ flexBasis: "auto" }}>
+                {management}
             </div>
             <div style={{ flexBasis: "auto" }}>
                 {worlds}
