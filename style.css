@@ -1,0 +1,18 @@
+.ant-selector {
+    width: 20px;
+    height: 20px;
+    background-color: #f0f0f0;
+    cursor: pointer;
+}
+
+.ant-selector:hover {
+    background-color: #e0e0e0;
+}
+
+.ant-selector.red.selected {
+    background-color: red;
+}
+
+.ant-selector.black.selected {
+    background-color: black;
+}

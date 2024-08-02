@@ -51,6 +51,9 @@ function App(props: { db: IDBDatabase, all_ants0: storage.Ant[] }) {
         refresh_ants();
     }, [refresh_ants]);
 
+    let [red_ant_id, set_red_ant_id] = useState("");
+    let [black_ant_id, set_black_ant_id] = useState("");
+
     let ants = <>
         <h3>Ants</h3>
         <table>
@@ -64,6 +67,18 @@ function App(props: { db: IDBDatabase, all_ants0: storage.Ant[] }) {
                                 refresh_ants();
                                 // TODO: show toast with undo option
                             }}>Delete</button>
+                        </td>
+                        <td>
+                            <div
+                                className={`ant-selector red ${red_ant_id === ant.id ? 'selected' : ''}`}
+                                onClick={() => set_red_ant_id(ant.id)}
+                            />
+                        </td>
+                        <td>
+                            <div
+                                className={`ant-selector black ${black_ant_id === ant.id ? 'selected' : ''}`}
+                                onClick={() => set_black_ant_id(ant.id)}
+                            />
                         </td>
                     </tr>
                 ))}
