@@ -36,7 +36,6 @@
     50% { background-color: #fe0; }
 }
 
-.world-selector.flash,
-.ant-selector.flash {
+.flash {
     animation: flash 0.5s ease-in-out 2;
 }

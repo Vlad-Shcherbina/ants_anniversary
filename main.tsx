@@ -54,10 +54,12 @@ function App(props: { db: IDBDatabase, all_ants0: storage.Ant[] }) {
     let [red_ant_id, set_red_ant_id] = useState("");
     let [black_ant_id, set_black_ant_id] = useState("");
     let [selected_world, set_selected_world] = useState("");
+    let [seed, set_seed] = useState("42");
     let [is_hovering, set_is_hovering] = useState(false);
 
     let red_ant_selected = all_ants.some(ant => ant.id === red_ant_id);
     let black_ant_selected = all_ants.some(ant => ant.id === black_ant_id);
+    let is_seed_valid = /^[1-9]\d*$/.test(seed);
 
     let ants = <>
         <h3>Ants</h3>
@@ -125,14 +127,24 @@ function App(props: { db: IDBDatabase, all_ants0: storage.Ant[] }) {
     </>;
 
     let errors = [];
-    if (!red_ant_selected) errors.push("Red and not selected");
-    if (!black_ant_selected) errors.push("Black and not selected");
+    if (!red_ant_selected) errors.push("Red ant not selected");
+    if (!black_ant_selected) errors.push("Black ant not selected");
     if (!selected_world) errors.push("World not selected");
+    if (!is_seed_valid) errors.push("Seed must be a positive integer");
 
     let management = <>
         <h3>Run game</h3>
         <label>Seed</label><br/>
-        <input type="text" value="42" style={{ width: "60px" }}/>
+        <span className={is_hovering && !is_seed_valid ? 'flash' : ''}>
+            {/* this span wrapper is needed because Chrome apparently
+                doesn't animate background-color property on input elements */}
+            <input
+                type="text"
+                value={seed}
+                onChange={(e) => set_seed(e.currentTarget.value)}
+                style={{ width: "60px", backgroundColor: "inherit" }}
+            />
+        </span>
         <br/>
         <br/>
         <input
