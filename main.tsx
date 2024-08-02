@@ -2,19 +2,20 @@ import "./vendor/preact/debug.js"; // should be first
 
 import { assert, bang } from "./assert.js";
 import * as preact from "./vendor/preact/preact.js";
-import { useState, useEffect } from "./vendor/preact/hooks.js";
+import { useState, useEffect, useCallback } from "./vendor/preact/hooks.js";
 import * as storage from "./storage.js";
 
 function App(props: { db: IDBDatabase }) {
     let { db } = props;
 
     let [all_ants, set_all_ants] = useState<storage.Ant[]>([]);
-    async function refresh_ants() {
+    const refresh_ants = useCallback(async () => {
         set_all_ants(await storage.get_all_ants(db));
-    }
+    }, [db]);
+
     useEffect(() => {
         refresh_ants();
-    }, []);
+    }, [refresh_ants]);
 
     return <div>
         <ul>
