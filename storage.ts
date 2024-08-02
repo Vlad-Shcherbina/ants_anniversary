@@ -42,6 +42,17 @@ export async function get_all_ants(db: IDBDatabase): Promise<Ant[]> {
     return await idb_async(tx.objectStore("ants").getAll());
 }
 
+export async function delete_ant(db: IDBDatabase, id: string) {
+    let tx = db.transaction("ants", "readwrite");
+    try {
+        let store = tx.objectStore("ants");
+        await idb_async(store.delete(id));
+    } catch (e) {
+        tx.abort();
+        throw e;
+    }
+}
+
 export async function compute_ant_id(source: string) {
     let msgBuffer = new TextEncoder().encode(source);
     let hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);

@@ -18,7 +18,16 @@ function App(props: { db: IDBDatabase }) {
 
     return <div>
         <ul>
-            {all_ants.map(ant => <li key={ant.id}>{ant.name}</li>)}
+            {all_ants.map(ant => (
+                <li key={ant.id}>
+                    {ant.name}
+                    <button onClick={async () => {
+                        await storage.delete_ant(db, ant.id);
+                        refresh_ants();
+                        // TODO: show toast with undo option
+                    }}>Delete</button>
+                </li>
+            ))}
         </ul>
         <input type="file" id="fileInput" accept=".ant" onChange={(e) => {
             let target = bang(e.target as HTMLInputElement);
