@@ -2,11 +2,24 @@ import "./vendor/preact/debug.js"; // should be first
 
 import { assert, bang } from "./assert.js";
 import * as preact from "./vendor/preact/preact.js";
+import { useState, useEffect } from "./vendor/preact/hooks.js";
 import * as storage from "./storage.js";
 
 function App(props: { db: IDBDatabase }) {
     let { db } = props;
+
+    let [all_ants, set_all_ants] = useState<storage.Ant[]>([]);
+    async function refresh_ants() {
+        set_all_ants(await storage.get_all_ants(db));
+    }
+    useEffect(() => {
+        refresh_ants();
+    }, []);
+
     return <div>
+        <ul>
+            {all_ants.map(ant => <li key={ant.id}>{ant.name}</li>)}
+        </ul>
         <input type="file" id="fileInput" accept=".ant" onChange={(e) => {
             let target = bang(e.target as HTMLInputElement);
             let file = target.files?.[0];
@@ -25,6 +38,9 @@ function App(props: { db: IDBDatabase }) {
                 let ant = { id, name, source: contents };
                 let added = await storage.add_ant(db, ant);
                 console.log("added", added);  // TODO: show toast (added or duplicate)
+                if (added) {
+                    refresh_ants();
+                }
             };
             reader.readAsText(file);
         }}/>

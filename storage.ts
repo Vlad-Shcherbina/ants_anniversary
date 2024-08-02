@@ -1,6 +1,6 @@
 import { assert } from "./assert.js";
 
-type Ant = {
+export type Ant = {
     id: string,
     name: string,
     source: string,
