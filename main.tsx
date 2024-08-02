@@ -36,18 +36,24 @@ function App(props: { db: IDBDatabase }) {
     }, [refresh_ants]);
 
     return <div>
-        <ul>
-            {all_ants.map(ant => (
-                <li key={ant.id}>
-                    {ant.name}
-                    <button onClick={async () => {
-                        await storage.delete_ant(db, ant.id);
-                        refresh_ants();
-                        // TODO: show toast with undo option
-                    }}>Delete</button>
-                </li>
-            ))}
-        </ul>
+        <h3>Ants</h3>
+        <table>
+            <tbody>
+                {all_ants.map(ant => (
+                    <tr key={ant.id}>
+                        <td>{ant.name}</td>
+                        <td>
+                            <button onClick={async () => {
+                                await storage.delete_ant(db, ant.id);
+                                refresh_ants();
+                                // TODO: show toast with undo option
+                            }}>Delete</button>
+                        </td>
+                    </tr>
+                ))}
+            </tbody>
+        </table>
+        <br/>
         <FileInput on_upload={async (name, contents) => {
             if (name.endsWith(".ant")) {
                 name = name.slice(0, -4);
