@@ -5,6 +5,24 @@ import * as preact from "./vendor/preact/preact.js";
 import { useState, useEffect, useCallback } from "./vendor/preact/hooks.js";
 import * as storage from "./storage.js";
 
+function FileInput(props: { on_upload: (name: string, contents: string) => void }) {
+    let { on_upload } = props;
+    return <input type="file" id="fileInput" accept=".ant" onChange={(e) => {
+        let target = bang(e.target as HTMLInputElement);
+        let file = target.files?.[0];
+        if (!file) return;
+        console.log(file.name, file.type);
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const contents = bang(e.target).result;
+            assert(typeof contents === "string", typeof contents);
+            on_upload(file.name, contents);
+        };
+        reader.readAsText(file);
+    }}/>;
+}
+
 function App(props: { db: IDBDatabase }) {
     let { db } = props;
 
@@ -30,29 +48,17 @@ function App(props: { db: IDBDatabase }) {
                 </li>
             ))}
         </ul>
-        <input type="file" id="fileInput" accept=".ant" onChange={(e) => {
-            let target = bang(e.target as HTMLInputElement);
-            let file = target.files?.[0];
-            if (!file) return;
-            console.log(file.name, file.type);
-
-            const reader = new FileReader();
-            reader.onload = async function(e) {
-                const contents = bang(e.target).result;
-                assert(typeof contents === "string", typeof contents);
-                let name = file.name;
-                if (file.name.endsWith(".ant")) {
-                    name = name.slice(0, -4);
-                }
-                let id = await storage.compute_ant_id(contents);
-                let ant = { id, name, source: contents };
-                let added = await storage.add_ant(db, ant);
-                console.log("added", added);  // TODO: show toast (added or duplicate)
-                if (added) {
-                    refresh_ants();
-                }
-            };
-            reader.readAsText(file);
+        <FileInput on_upload={async (name, contents) => {
+            if (name.endsWith(".ant")) {
+                name = name.slice(0, -4);
+            }
+            let id = await storage.compute_ant_id(contents);
+            let ant = { id, name, source: contents };
+            let added = await storage.add_ant(db, ant);
+            console.log("added", added);  // TODO: show toast (added or duplicate)
+            if (added) {
+                refresh_ants();
+            }
         }}/>
     </div>;
 }
