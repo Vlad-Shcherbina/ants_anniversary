@@ -26,7 +26,6 @@ export default [
         rules: {
             "prefer-const": "off",
             "@typescript-eslint/no-unused-vars": "warn",
-            "react/self-closing-comp": "error",
             "react/react-in-jsx-scope": "off",
             "react-hooks/rules-of-hooks": "error",
             "react-hooks/exhaustive-deps": "warn",
