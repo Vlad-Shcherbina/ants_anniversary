@@ -49,49 +49,54 @@ function App(props: { db: IDBDatabase }) {
         refresh_ants();
     }, [refresh_ants]);
 
-    return <div>
-        <h3>Ants</h3>
-        <table>
-            <tbody>
-                {all_ants.map(ant => (
-                    <tr key={ant.id}>
-                        <td>{ant.name}</td>
-                        <td>
-                            <button onClick={async () => {
-                                await storage.delete_ant(db, ant.id);
-                                refresh_ants();
-                                // TODO: show toast with undo option
-                            }}>Delete</button>
-                        </td>
-                    </tr>
-                ))}
-            </tbody>
-        </table>
-        <br/>
-        <FileInput on_upload={async (name, contents) => {
-            if (name.endsWith(".ant")) {
-                name = name.slice(0, -4);
-            }
-            let id = await storage.compute_ant_id(contents);
-            let ant = { id, name, source: contents };
-            let added = await storage.add_ant(db, ant);
-            console.log("added", added);  // TODO: show toast (added or duplicate)
-            if (added) {
-                refresh_ants();
-            }
-        }}/>
-        <br/>
-        <h3>Maps</h3>
-        <table>
-            <tbody>
-                {all_worlds.map(world => (
-                    <tr key={world}>
-                        <td>{world}</td>
-                    </tr>
-                ))}
-            </tbody>
-        </table>
-    </div>;
+    return (
+        <div style={{ display: "flex", justifyContent: "flex-start" }}>
+            <div style={{ flexBasis: "auto" }}>
+                <h3>Ants</h3>
+                <table>
+                    <tbody>
+                        {all_ants.map(ant => (
+                            <tr key={ant.id}>
+                                <td>{ant.name}</td>
+                                <td>
+                                    <button onClick={async () => {
+                                        await storage.delete_ant(db, ant.id);
+                                        refresh_ants();
+                                        // TODO: show toast with undo option
+                                    }}>Delete</button>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+                <br/>
+                <FileInput on_upload={async (name, contents) => {
+                    if (name.endsWith(".ant")) {
+                        name = name.slice(0, -4);
+                    }
+                    let id = await storage.compute_ant_id(contents);
+                    let ant = { id, name, source: contents };
+                    let added = await storage.add_ant(db, ant);
+                    console.log("added", added);  // TODO: show toast (added or duplicate)
+                    if (added) {
+                        refresh_ants();
+                    }
+                }}/>
+            </div>
+            <div style={{ flexBasis: "auto" }}>
+                <h3>Worlds</h3>
+                <table>
+                    <tbody>
+                        {all_worlds.map(world => (
+                            <tr key={world}>
+                                <td>{world}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
 }
 
 async function main() {
