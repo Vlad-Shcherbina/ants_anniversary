@@ -23,6 +23,20 @@ function FileInput(props: { on_upload: (name: string, contents: string) => void 
     }}/>;
 }
 
+let all_worlds = [
+    "sample0",
+    "sample1",
+    "sample2",
+    "sample3",
+    "sample4",
+    "sample5",
+    "sample6",
+    "sample7",
+    "sample8",
+    "sample9",
+    "tiny",
+];
+
 function App(props: { db: IDBDatabase }) {
     let { db } = props;
 
@@ -66,6 +80,17 @@ function App(props: { db: IDBDatabase }) {
                 refresh_ants();
             }
         }}/>
+        <br/>
+        <h3>Maps</h3>
+        <table>
+            <tbody>
+                {all_worlds.map(world => (
+                    <tr key={world}>
+                        <td>{world}</td>
+                    </tr>
+                ))}
+            </tbody>
+        </table>
     </div>;
 }
 
