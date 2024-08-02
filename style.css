@@ -31,3 +31,12 @@
 .world-selector.selected {
     background-color: #4CAF50;
 }
+
+@keyframes flash {
+    50% { background-color: #fe0; }
+}
+
+.world-selector.flash,
+.ant-selector.flash {
+    animation: flash 0.5s ease-in-out 2;
+}

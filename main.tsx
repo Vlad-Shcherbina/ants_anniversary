@@ -54,6 +54,10 @@ function App(props: { db: IDBDatabase, all_ants0: storage.Ant[] }) {
     let [red_ant_id, set_red_ant_id] = useState("");
     let [black_ant_id, set_black_ant_id] = useState("");
     let [selected_world, set_selected_world] = useState("");
+    let [is_hovering, set_is_hovering] = useState(false);
+
+    let red_ant_selected = all_ants.some(ant => ant.id === red_ant_id);
+    let black_ant_selected = all_ants.some(ant => ant.id === black_ant_id);
 
     let ants = <>
         <h3>Ants</h3>
@@ -71,13 +75,13 @@ function App(props: { db: IDBDatabase, all_ants0: storage.Ant[] }) {
                         </td>
                         <td>
                             <div
-                                className={`ant-selector red ${red_ant_id === ant.id ? 'selected' : ''}`}
+                                className={`ant-selector red ${red_ant_id === ant.id ? 'selected' : ''} ${is_hovering && !red_ant_selected ? 'flash' : ''}`}
                                 onClick={() => set_red_ant_id(ant.id)}
                             />
                         </td>
                         <td>
                             <div
-                                className={`ant-selector black ${black_ant_id === ant.id ? 'selected' : ''}`}
+                                className={`ant-selector black ${black_ant_id === ant.id ? 'selected' : ''} ${is_hovering && !black_ant_selected ? 'flash' : ''}`}
                                 onClick={() => set_black_ant_id(ant.id)}
                             />
                         </td>
@@ -109,7 +113,7 @@ function App(props: { db: IDBDatabase, all_ants0: storage.Ant[] }) {
                     <tr key={world}>
                         <td>
                             <div
-                                className={`world-selector ${selected_world === world ? 'selected' : ''}`}
+                                className={`world-selector ${selected_world === world ? 'selected' : ''} ${is_hovering && !selected_world ? 'flash' : ''}`}
                                 onClick={() => set_selected_world(world)}
                             />
                         </td>
@@ -120,15 +124,28 @@ function App(props: { db: IDBDatabase, all_ants0: storage.Ant[] }) {
         </table>
     </>;
 
+    let errors = [];
+    if (!red_ant_selected) errors.push("Red and not selected");
+    if (!black_ant_selected) errors.push("Black and not selected");
+    if (!selected_world) errors.push("World not selected");
+
     let management = <>
         <h3>Run game</h3>
         <label>Seed</label><br/>
         <input type="text" value="42" style={{ width: "60px" }}/>
         <br/>
         <br/>
-        <input type="button" value="Run" onClick={() => {
-            console.log("Run", red_ant_id, black_ant_id, selected_world);
-        }}/>
+        <input
+            type="button"
+            value="Run"
+            disabled={errors.length > 0}
+            title={errors.join("\n")}
+            onClick={() => {
+                console.log("Run", red_ant_id, black_ant_id, selected_world);
+            }}
+            onMouseEnter={() => set_is_hovering(true)}
+            onMouseLeave={() => set_is_hovering(false)}
+        />
     </>;
 
     return (
