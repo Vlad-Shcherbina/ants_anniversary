@@ -37,10 +37,12 @@ let all_worlds = [
     "tiny",
 ];
 
-function App(props: { db: IDBDatabase }) {
-    let { db } = props;
+function App(props: { db: IDBDatabase, all_ants0: storage.Ant[] }) {
+    let { db, all_ants0 } = props;
+    // all_ants0 prop is ugly, but it's needed to avoid initial brief flash
+    // of file input in the wrong place while the list is empty.
 
-    let [all_ants, set_all_ants] = useState<storage.Ant[]>([]);
+    let [all_ants, set_all_ants] = useState<storage.Ant[]>(all_ants0);
     const refresh_ants = useCallback(async () => {
         set_all_ants(await storage.get_all_ants(db));
     }, [db]);
@@ -109,7 +111,8 @@ function App(props: { db: IDBDatabase }) {
 
 async function main() {
     let db = await storage.init();
+    let all_ants0 = await storage.get_all_ants(db);
     let root = bang(document.getElementById("root"));
-    preact.render(<App db={db}/>, root);
+    preact.render(<App db={db} all_ants0={all_ants0}/>, root);
 }
 main();
