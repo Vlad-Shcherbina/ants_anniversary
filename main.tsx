@@ -53,6 +53,7 @@ function App(props: { db: IDBDatabase, all_ants0: storage.Ant[] }) {
 
     let [red_ant_id, set_red_ant_id] = useState("");
     let [black_ant_id, set_black_ant_id] = useState("");
+    let [selected_world, set_selected_world] = useState("");
 
     let ants = <>
         <h3>Ants</h3>
@@ -105,6 +106,12 @@ function App(props: { db: IDBDatabase, all_ants0: storage.Ant[] }) {
             <tbody>
                 {all_worlds.map(world => (
                     <tr key={world}>
+                        <td>
+                            <div
+                                className={`world-selector ${selected_world === world ? 'selected' : ''}`}
+                                onClick={() => set_selected_world(world)}
+                            />
+                        </td>
                         <td>{world}</td>
                     </tr>
                 ))}
