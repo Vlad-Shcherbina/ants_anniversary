@@ -16,7 +16,7 @@ type Cond =
     | "Home"
     | "FoeHome";
 
-type Insn =
+export type Insn =
     | { type: "Sense", dir: SenseDir, st1: number, st2: number, cond: Cond }
     | { type: "Mark", marker: Marker, st: number }
     | { type: "Unmark", marker: Marker, st: number }

@@ -7,7 +7,7 @@ export type WorldCell =
     | "BlackAnthill"
     | { type: "Food", count: number }
 
-type World = (WorldPos & { cell: WorldCell })[];    
+export type World = (WorldPos & { cell: WorldCell })[];    
     
 export function parse_world(s: string): World {
     let lines = s.trim().split("\n");
