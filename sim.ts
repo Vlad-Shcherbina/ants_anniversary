@@ -1,4 +1,4 @@
-import { assert } from "./assert.js";
+import { assert, bang } from "./assert.js";
 import type { Insn } from "./brain.js";
 import type { WorldPos, World } from "./cartography.js";
 
@@ -45,6 +45,7 @@ type Cell = {
 
 type Ant = {
     color: "red" | "black",
+    cell_idx: number;
     state: number,
     resting: number,
     dir: number,
@@ -65,10 +66,11 @@ export class Sim {
     height!: number;
     cells!: Cell[];
     wp_to_idx!: (WorldPos & { idx: number })[];
-    ants!: Ant[];
+    ants!: (Ant | null)[]; // null means dead
     red_brain!: Insn[];
     black_brain!: Insn[];
     rng!: Rng;
+    dir_offsets!: number[];
 
     constructor(args: typeof ALL_SIM_FIELDS) {
         Object.assign(this, args);
@@ -77,9 +79,10 @@ export class Sim {
     static create(args: { world: World, red_brain: Insn[], black_brain: Insn[], seed: number }): Sim {
         let { world, red_brain, black_brain, seed } = args;
         let ants: Ant[] = [];
-        function add_ant(color: "red" | "black") {
+        function add_ant(color: "red" | "black", cell_idx: number) {
             ants.push({
                 color,
+                cell_idx,
                 state: 0,
                 resting: 0,
                 dir: 0,
@@ -116,11 +119,11 @@ export class Sim {
                 case "Clear": break;
                 case "RedAnthill":
                     cell.hill = "red";
-                    cell.ant = add_ant("red");
+                    cell.ant = add_ant("red", idx);
                     break;
                 case "BlackAnthill":
                     cell.hill = "black";
-                    cell.ant = add_ant("black");
+                    cell.ant = add_ant("black", idx);
                     break;
                 default: {
                     let _: "Food" = wp.cell.type;
@@ -140,12 +143,24 @@ export class Sim {
             }
             console.log(s);
         }*/
+
+        let dir = { u: 0, v: 1 };
+        let dir_offsets: number[] = [];
+        for (let i = 0; i < 6; i++) {
+            console.log(dir);
+            dir_offsets.push(dir.u * width + dir.v);
+            let { u, v } = dir;
+            let w = -dir.u - dir.v;
+            dir = { u: -w, v: -u }
+        }
+        assert(dir.u === 0 && dir.v === 1);
         return new Sim({
             min_u, min_v, width, height, wp_to_idx,
             cells,
             ants,
             red_brain,
             black_brain,
+            dir_offsets,
             rng: new Rng(seed),
         });
     }
@@ -164,13 +179,53 @@ export class Sim {
                 res += `${cell.hill} hill; `;
             }
             if (cell.ant !== null) {
-                const ant = this.ants[cell.ant];
+                let ant = bang(this.ants[cell.ant]);
                 res += `${ant.color} ant of id ${cell.ant}, dir ${ant.dir}, food ${ant.has_food ? 1 : 0}, state ${ant.state}, resting ${ant.resting}`;
             }
             assert(cell.red_markers === 0, "TODO");
             assert(cell.black_markers === 0, "TODO");
             return res;
         })
+    }
+    
+    step() {
+        for (let ant_id = 0; ant_id < this.ants.length; ant_id++) {
+            let ant = this.ants[ant_id];
+            if (ant === null) continue;
+            if (ant.resting > 0) {
+                ant.resting--;
+                continue;
+            }
+            let brain = ant.color === "red" ? this.red_brain : this.black_brain;
+            let insn = brain[ant.state];
+            switch (insn.type) {
+                case "Flip": {
+                    let random_result = this.rng.random_int(insn.p);
+                    ant.state = random_result === 0 ? insn.st1 : insn.st2;
+                    break;
+                }
+                case "Turn": {
+                    ant.dir = (ant.dir + (insn.dir === "Left" ? 5 : 1)) % 6;
+                    ant.state = insn.st;
+                    break;
+                }
+                case "Move": {
+                    let new_cell_idx = ant.cell_idx + this.dir_offsets[ant.dir];
+                    if (this.cells[new_cell_idx].is_rock || this.cells[new_cell_idx].ant !== null) {
+                        ant.state = insn.st2;
+                    } else {
+                        this.cells[ant.cell_idx].ant = null;
+                        this.cells[new_cell_idx].ant = ant_id;
+                        ant.cell_idx = new_cell_idx;
+                        ant.state = insn.st1;
+                        ant.resting = 14;
+                        // TODO: this.check_for_surrounded_ants(new_cell_idx);
+                    }
+                    break;
+                }
+                default: assert(false, insn.type)
+            }
+        }
     }
 }
 

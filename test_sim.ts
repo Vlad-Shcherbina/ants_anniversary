@@ -48,11 +48,15 @@ async function main() {
     
     let lines = [];
     lines.push(`random seed: ${seed}`);
-    lines.push("");
-    lines.push("After round 0...");
-    lines.push(...sim.dump_state());
-    
+    for (let round = 0; round < 6; round++) {
+        lines.push("");
+        lines.push(`After round ${round}...`);
+        lines.push(...sim.dump_state());
+        sim.step();
+    }
+
     lines.forEach((line, i) => {
+        console.log(line);
         if (line !== expected_lines[i]) {
             console.log(`line ${i}:`);
             console.log(`  expected: ${expected_lines[i]}`);
