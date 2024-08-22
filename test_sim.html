@@ -4,6 +4,18 @@
     <link rel="icon" href="data:;base64,iVBORw0KGgo=">
 </head>
 <body>
+    <div id="error-message" style="background-color: red; position: fixed; display: none; z-index: 1000000">
+      unhandled error, see console logs
+    </div>
+    <script>
+      window.addEventListener('error', () => {
+        document.getElementById('error-message').style.display = 'block';
+      }, /* catch resource loading errors as well */ true);
+      window.onunhandledrejection = () => {
+        document.getElementById('error-message').style.display = 'block';
+      };
+    </script>
+
     <script type="module" src="./test_sim.js"></script>
 </body>
 </html>
