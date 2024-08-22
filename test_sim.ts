@@ -19,7 +19,8 @@ async function main() {
         world = parse_world(text);
         console.log(world);
     }
-    let sim = Sim.create({ world, red_brain: brain, black_brain: brain });
+    let seed = 12345;
+    let sim = Sim.create({ world, red_brain: brain, black_brain: brain, seed });
     console.log(sim.dump_state());
     
     let expected_lines: string[] = [];
@@ -46,7 +47,7 @@ async function main() {
     }
     
     let lines = [];
-    lines.push("random seed: 12345");
+    lines.push(`random seed: ${seed}`);
     lines.push("");
     lines.push("After round 0...");
     lines.push(...sim.dump_state());
