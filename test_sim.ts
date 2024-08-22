@@ -1,6 +1,15 @@
 import { assert, bang } from "./assert.js";
+import { parse_insn } from "./brain.js";
 
 async function main() {
+    let r = await fetch("data/sample.ant");
+    assert(r.ok);
+    let text = await r.text();
+    for (let line of text.trimEnd().split("\n")) {
+        console.log(line);
+        console.log(parse_insn(line));
+    }
+    
     console.time("fetch and unpack trace");
     // http://www.cis.upenn.edu/~plclub/contest/dump/dump.all.gz
     let resp = await fetch("data/dump.all.gz");
