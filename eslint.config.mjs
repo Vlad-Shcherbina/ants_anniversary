@@ -24,6 +24,7 @@ export default [
             "react-hooks": hooks,
         },
         rules: {
+            "no-constant-condition": ["warn", { "checkLoops": "allExceptWhileTrue" }],
             "prefer-const": "off",
             "@typescript-eslint/no-unused-vars": "warn",
             "react/react-in-jsx-scope": "off",
