@@ -4,7 +4,7 @@ type Marker = 0 | 1 | 2 | 3 | 4 | 5;
 
 type LeftOrRight = "Left" | "Right";
 
-type Cond =
+export type Cond =
     | "Friend"
     | "Foe"
     | "FriendWithFood"

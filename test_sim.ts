@@ -46,17 +46,19 @@ async function main() {
         expected_lines = full_text.trimEnd().split("\n");
     }
     
+    console.time("trace 10000 rounds");
     let lines = [];
     lines.push(`random seed: ${seed}`);
-    for (let round = 0; round < 6; round++) {
+    for (let round = 0; round <= 10000; round++) {
         lines.push("");
         lines.push(`After round ${round}...`);
         lines.push(...sim.dump_state());
         sim.step();
     }
+    console.timeEnd("trace 10000 rounds");
 
     lines.forEach((line, i) => {
-        console.log(line);
+        // console.log(line);
         if (line !== expected_lines[i]) {
             console.log(`line ${i}:`);
             console.log(`  expected: ${expected_lines[i]}`);
@@ -65,6 +67,7 @@ async function main() {
         }
     })
     console.log(lines.length, "lines match");
+    assert(lines.length === expected_lines.length);
 }
 
 main();

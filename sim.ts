@@ -1,5 +1,5 @@
-import { assert, bang } from "./assert.js";
-import type { Insn } from "./brain.js";
+import { assert, bang, never } from "./assert.js";
+import type { Insn, Cond } from "./brain.js";
 import type { WorldPos, World } from "./cartography.js";
 
 /** Barycentric hex coordinates.
@@ -150,7 +150,7 @@ export class Sim {
             console.log(dir);
             dir_offsets.push(dir.u * width + dir.v);
             let { u, v } = dir;
-            let w = -dir.u - dir.v;
+            let w = -u - v;
             dir = { u: -w, v: -u }
         }
         assert(dir.u === 0 && dir.v === 1);
@@ -178,12 +178,28 @@ export class Sim {
             if (cell.hill) {
                 res += `${cell.hill} hill; `;
             }
+            if (cell.red_markers > 0) {
+                res += "red marks: ";
+                for (let i = 0; i < 6; i++) {
+                    if (cell.red_markers & (1 << i)) {
+                        res += i;
+                    }
+                }
+                res += "; ";
+            }
+            if (cell.black_markers > 0) {
+                res += "black marks: ";
+                for (let i = 0; i < 6; i++) {
+                    if (cell.black_markers & (1 << i)) {
+                        res += i;
+                    }
+                }
+                res += "; ";
+            }
             if (cell.ant !== null) {
                 let ant = bang(this.ants[cell.ant]);
                 res += `${ant.color} ant of id ${cell.ant}, dir ${ant.dir}, food ${ant.has_food ? 1 : 0}, state ${ant.state}, resting ${ant.resting}`;
             }
-            assert(cell.red_markers === 0, "TODO");
-            assert(cell.black_markers === 0, "TODO");
             return res;
         })
     }
@@ -198,6 +214,7 @@ export class Sim {
             }
             let brain = ant.color === "red" ? this.red_brain : this.black_brain;
             let insn = brain[ant.state];
+            let cell = this.cells[ant.cell_idx];
             switch (insn.type) {
                 case "Flip": {
                     let random_result = this.rng.random_int(insn.p);
@@ -214,17 +231,126 @@ export class Sim {
                     if (this.cells[new_cell_idx].is_rock || this.cells[new_cell_idx].ant !== null) {
                         ant.state = insn.st2;
                     } else {
-                        this.cells[ant.cell_idx].ant = null;
+                        cell.ant = null;
                         this.cells[new_cell_idx].ant = ant_id;
                         ant.cell_idx = new_cell_idx;
                         ant.state = insn.st1;
                         ant.resting = 14;
-                        // TODO: this.check_for_surrounded_ants(new_cell_idx);
+                        
+                        this.check_for_surrounded_ant(ant.cell_idx);
+                        for (let offset of this.dir_offsets) {
+                            this.check_for_surrounded_ant(ant.cell_idx + offset);
+                        }
                     }
                     break;
                 }
-                default: assert(false, insn.type)
+                case "Drop": {
+                    if (ant.has_food) {
+                        cell.food++;
+                        ant.has_food = false;
+                    }
+                    ant.state = insn.st;
+                    break;
+                }
+                case "PickUp": {
+                    if (ant.has_food || cell.food === 0) {
+                        ant.state = insn.st2;
+                    } else {
+                        cell.food--;
+                        ant.has_food = true;
+                        ant.state = insn.st1;
+                    }
+                    break;
+                }
+                case "Unmark": {
+                    if (ant.color === "red") {
+                        cell.red_markers &= ~(1 << insn.marker);
+                    } else if (ant.color === "black") {
+                        cell.black_markers &= ~(1 << insn.marker);
+                    } else {
+                        never(ant.color);
+                    }
+                    ant.state = insn.st;
+                    break;
+                }
+                case "Mark": {
+                    if (ant.color === "red") {
+                        cell.red_markers |= 1 << insn.marker;
+                    } else if (ant.color === "black") {
+                        cell.black_markers |= 1 << insn.marker;
+                    } else {
+                        never(ant.color);
+                    }
+                    ant.state = insn.st;
+                    break;
+                }
+                case "Sense": {
+                    let sensed_cell_idx;
+                    switch (insn.dir) {
+                        case "Here": sensed_cell_idx = ant.cell_idx; break;
+                        case "Ahead": sensed_cell_idx = ant.cell_idx + this.dir_offsets[ant.dir]; break;
+                        case "LeftAhead": sensed_cell_idx = ant.cell_idx + this.dir_offsets[(ant.dir + 5) % 6]; break;
+                        case "RightAhead": sensed_cell_idx = ant.cell_idx + this.dir_offsets[(ant.dir + 1) % 6]; break;
+                        default: never(insn);
+                    }
+                    let condition_met = this.check_condition(this.cells[sensed_cell_idx], insn.cond, ant.color);
+                    ant.state = condition_met ? insn.st1 : insn.st2;
+                    break;
+                }
+                default: never(insn);
             }
+        }
+    }
+    
+    check_condition(cell: Cell, cond: Cond, ant_color: "red" | "black") {
+        let ant: Ant | null;
+        switch (cond) {
+            case "Rock": return cell.is_rock;
+            case "Friend": return cell.ant !== null && (ant = this.ants[cell.ant]) &&
+                ant.color === ant_color;
+            case "Foe": return cell.ant !== null && (ant = this.ants[cell.ant]) &&
+                ant.color !== ant_color;
+            case "FriendWithFood": return cell.ant !== null && (ant = this.ants[cell.ant]) &&
+                ant.color === ant_color && ant.has_food;
+            case "FoeWithFood": return cell.ant !== null && (ant = this.ants[cell.ant]) &&
+                ant.color !== ant_color && ant.has_food;
+            case "Home": return cell.hill === ant_color;
+            case "FoeHome": return cell.hill !== null && cell.hill !== ant_color;
+            case "Food": return cell.food > 0;
+            case "FoeMarker": return ant_color === "red" && cell.black_markers !== 0 ||
+                ant_color === "black" && cell.red_markers !== 0;
+            default: {
+                if (typeof cond === "string") throw cond; // TODO
+                let _: "Marker" = cond.type;
+                if (ant_color === "red") {
+                    return (cell.red_markers & (1 << cond.marker)) !== 0;
+                } else if (ant_color === "black") {
+                    return (cell.black_markers & (1 << cond.marker)) !== 0;
+                } else {
+                    never(ant_color);
+                }
+            }
+        }
+    }
+    
+    check_for_surrounded_ant(cell_idx: number): void {
+        let cell = this.cells[cell_idx];
+        if (cell.ant === null) return;
+        
+        let ant = bang(this.ants[cell.ant]);
+        let enemy_color = ant.color === "red" ? "black" : "red";
+        let enemy_count = 0;
+        
+        for (let offset of this.dir_offsets) {
+            let adjacent_cell = this.cells[cell_idx + offset];
+            if (adjacent_cell.ant !== null && this.ants[adjacent_cell.ant]?.color === enemy_color) {
+                enemy_count++;
+            }
+        }
+        if (enemy_count >= 5) {
+            this.ants[cell.ant] = null;
+            cell.ant = null;
+            cell.food += 3 + (ant.has_food ? 1 : 0);
         }
     }
 }
