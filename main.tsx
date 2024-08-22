@@ -50,21 +50,19 @@ function useLocationHash() {
     return hash;
 }
 
-function App(props: { db: IDBDatabase, all_ants0: storage.Ant[] }) {
+function App(props: { db: IDBDatabase }) {
     let hash = useLocationHash();
     if (hash === "") {
-        return <Lobby db={props.db} all_ants0={props.all_ants0}/>;
+        return <Lobby db={props.db}/>;
     } else {
         return <>Unknown hash: {hash}</>;
     }
 }
 
-function Lobby(props: { db: IDBDatabase, all_ants0: storage.Ant[] }) {
-    let { db, all_ants0 } = props;
-    // all_ants0 prop is ugly, but it's needed to avoid initial brief flash
-    // of file input in the wrong place while the list is empty.
+function Lobby(props: { db: IDBDatabase }) {
+    let { db } = props;
 
-    let [all_ants, set_all_ants] = useState<storage.Ant[]>(all_ants0);
+    let [all_ants, set_all_ants] = useState<storage.Ant[] | null>(null);
     const refresh_ants = useCallback(async () => {
         set_all_ants(await storage.get_all_ants(db));
     }, [db]);
@@ -78,6 +76,11 @@ function Lobby(props: { db: IDBDatabase, all_ants0: storage.Ant[] }) {
     let [selected_world, set_selected_world] = useState("");
     let [seed, set_seed] = useState("42");
     let [is_hovering, set_is_hovering] = useState(false);
+    
+    if (all_ants === null) {
+        // no need for spinner because loading from IndexedDB is fast
+        return <></>;
+    }
 
     let red_ant_selected = all_ants.some(ant => ant.id === red_ant_id);
     let black_ant_selected = all_ants.some(ant => ant.id === black_ant_id);
@@ -199,8 +202,7 @@ function Lobby(props: { db: IDBDatabase, all_ants0: storage.Ant[] }) {
 
 async function main() {
     let db = await storage.init();
-    let all_ants0 = await storage.get_all_ants(db);
     let root = bang(document.getElementById("root"));
-    preact.render(<App db={db} all_ants0={all_ants0}/>, root);
+    preact.render(<App db={db} />, root);
 }
 main();
