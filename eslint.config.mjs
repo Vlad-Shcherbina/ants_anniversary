@@ -26,7 +26,19 @@ export default [
         rules: {
             "no-constant-condition": ["warn", { "checkLoops": "allExceptWhileTrue" }],
             "prefer-const": "off",
-            "@typescript-eslint/no-unused-vars": "warn",
+            "@typescript-eslint/no-unused-vars": [
+              // https://johnnyreilly.com/typescript-eslint-no-unused-vars
+              "warn",
+              {
+                "args": "all",
+                "argsIgnorePattern": "^_",
+                "caughtErrors": "all",
+                "caughtErrorsIgnorePattern": "^_",
+                "destructuredArrayIgnorePattern": "^_",
+                "varsIgnorePattern": "^_",
+                "ignoreRestSiblings": true,
+              }
+            ],
             "react/react-in-jsx-scope": "off",
             "react-hooks/rules-of-hooks": "error",
             "react-hooks/exhaustive-deps": "warn",
