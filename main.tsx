@@ -37,7 +37,29 @@ let all_worlds = [
     "tiny",
 ];
 
+function useLocationHash() {
+    let [hash, set_hash] = useState(window.location.hash);
+    useEffect(() => {
+        let on_hashchange = () => set_hash(window.location.hash);
+        window.addEventListener("hashchange", on_hashchange);
+        return () => window.removeEventListener("hashchange", on_hashchange);
+    }, []);
+    if (hash.startsWith("#")) {
+        hash = hash.slice(1);
+    }
+    return hash;
+}
+
 function App(props: { db: IDBDatabase, all_ants0: storage.Ant[] }) {
+    let hash = useLocationHash();
+    if (hash === "") {
+        return <Lobby db={props.db} all_ants0={props.all_ants0}/>;
+    } else {
+        return <>Unknown hash: {hash}</>;
+    }
+}
+
+function Lobby(props: { db: IDBDatabase, all_ants0: storage.Ant[] }) {
     let { db, all_ants0 } = props;
     // all_ants0 prop is ugly, but it's needed to avoid initial brief flash
     // of file input in the wrong place while the list is empty.
@@ -67,7 +89,7 @@ function App(props: { db: IDBDatabase, all_ants0: storage.Ant[] }) {
             <tbody>
                 {all_ants.map(ant => (
                     <tr key={ant.id}>
-                        <td>{ant.name}</td>
+                        <td><a href={ "#ant:" + ant.id }>{ant.name}</a></td>
                         <td>
                             <button onClick={async () => {
                                 await storage.delete_ant(db, ant.id);
@@ -119,7 +141,7 @@ function App(props: { db: IDBDatabase, all_ants0: storage.Ant[] }) {
                                 onClick={() => set_selected_world(world)}
                             />
                         </td>
-                        <td>{world}</td>
+                        <td><a href={"#world:" + world}>{world}</a></td>
                     </tr>
                 ))}
             </tbody>
