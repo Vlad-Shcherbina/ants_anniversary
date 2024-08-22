@@ -1,11 +1,21 @@
 import { assert, bang } from "./assert.js";
 import { parse_brain } from "./brain.js";
+import { parse_world } from "./cartography.js";
 
 async function main() {
-    let r = await fetch("data/sample.ant");
-    assert(r.ok);
-    let text = await r.text();
-    parse_brain(text);
+    {
+        let resp = await fetch("data/sample.ant");
+        assert(resp.ok);
+        let text = await resp.text();
+        parse_brain(text);
+    }
+    {
+        let resp = await fetch("data/tiny.world");
+        assert(resp.ok);
+        let text = await resp.text();
+        let w = parse_world(text);
+        console.log(w);
+    }
     
     console.time("fetch and unpack trace");
     // http://www.cis.upenn.edu/~plclub/contest/dump/dump.all.gz
