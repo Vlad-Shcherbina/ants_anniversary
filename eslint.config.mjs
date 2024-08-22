@@ -35,7 +35,8 @@ export default [
                 "caughtErrors": "all",
                 "caughtErrorsIgnorePattern": "^_",
                 "destructuredArrayIgnorePattern": "^_",
-                "varsIgnorePattern": "^_",
+                "varsIgnorePattern": "^_|^preact$",
+                // Ignoring "unused" `preact` import, because JSX transpilation uses `preact.h`.
                 "ignoreRestSiblings": true,
               }
             ],
