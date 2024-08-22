@@ -30,8 +30,10 @@ type Insn =
 function parse_state(tokens: string[]): number {
     let token = tokens.shift();
     if (token === undefined) throw "missing state number";
-    let state = parseInt(token);
+    let state = parseFloat(token);
+    // TODO: this doesn't check that parseFloat() consumed the whole token
     if (isNaN(state)) throw "invalid state number";
+    if (state !== Math.floor(state)) throw "state number must be an integer";
     return state;
 }
 
@@ -142,7 +144,13 @@ export function parse_insn(line: string): Insn {
             return { type: "Move", st1, st2 };
         }
         case "flip": {
-            let p = parse_state(tokens); // TODO: parse positive number
+            let p_str = tokens.shift();
+            if (p_str === undefined) throw "missing p";
+            let p = parseFloat(p_str);
+            // TODO: this doesn't check that parseFloat() consumed the whole token
+            if (isNaN(p)) throw "invalid p";
+            if (p !== Math.floor(p)) throw "p must be an integer";
+            if (p <= 0) throw "p must be positive";
             let st1 = parse_state(tokens);
             let st2 = parse_state(tokens);
             check_end(tokens);
@@ -150,4 +158,14 @@ export function parse_insn(line: string): Insn {
         }
         default: throw "unrecognized instruction";
     }
+}
+
+export function parse_brain(s: string): Insn[] {
+    return s.trimEnd().split("\n").map((line, i) => {
+        try {
+            return parse_insn(line);
+        } catch (e) {
+            throw `line ${i + 1}: ${JSON.stringify(line)}\n${e}`;
+        }
+    });
 }
