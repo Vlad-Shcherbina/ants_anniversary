@@ -4,7 +4,7 @@ import { useEffect, useState } from "./vendor/preact/hooks.js";
 import * as storage from "./storage.js";
 import { type World, parse_world } from "./cartography.js";
 import { type Insn, parse_brain } from "./brain.js";
-import { Sim } from "./sim.js";
+import { Sim, Color } from "./sim.js";
 
 
 type GameProps = {
@@ -13,6 +13,22 @@ type GameProps = {
     black_ant_id: string,
     world_name: string,
     seed: number,
+}
+
+const NUM_STEPS = 100000;
+
+type FoodChartEntry = {
+    red_hill_food: number,
+    black_hill_food: number,
+}
+
+// A wrapper object helps with "immutable" updates.
+// The list of entries is long, and we want to push stuff to it.
+// But React relies on object identity to detect changes.
+// So we'll mutate the list in place, but each time we do so,
+// we'll make a shallow copy of the wrapper object.
+type FoodChart = {
+    entries: FoodChartEntry[],
 }
 
 export function ViewGame(props: GameProps) {
@@ -37,18 +53,48 @@ export function ViewGame(props: GameProps) {
         })();
     }, [db, red_ant_id, black_ant_id]);
     
+    let [food_chart, set_food_chart] = useState<FoodChart>({ entries: [] });
+
     useEffect(() => {
         if (world === null || brains === null) return;
         let sim = Sim.create({ world, red_brain: brains[0], black_brain: brains[1], seed });
+        // TODO: spread simulation over time using setInterval() or something to improve responsiveness
         console.time("run simulation");
-        for (let i = 0; i < 100000; i++) {
+        let new_food_chart_entries: FoodChartEntry[] = [];
+        for (let i = 0; i < NUM_STEPS; i++) {
             sim.step();
+            new_food_chart_entries.push({
+                red_hill_food: sim.hill_food[Color.Red],
+                black_hill_food: sim.hill_food[Color.Black],
+            });
         }
         console.timeEnd("run simulation");
-        // for (let line of sim.dump_state()) {
-        //     console.log(line);
-        // }
+        set_food_chart(food_chart => {
+            food_chart.entries.push(...new_food_chart_entries);
+            return { ...food_chart };
+        })
     }, [brains, world, seed]);
-    
-    return <></>;
+
+    let food_chart_rows: preact.JSX.Element[] = [];
+    food_chart.entries.forEach((entry, i) => {
+        if (i % 1000 !== 0) return;
+        food_chart_rows.push(<tr key={i}>
+            <td>{i}</td>
+            <td>{entry.red_hill_food}</td>
+            <td>{entry.black_hill_food}</td>
+        </tr>);
+    });
+
+    return <table>
+        <thead>
+            <tr>
+                <th>Step</th>
+                <th>Red Hill Food</th>
+                <th>Black Hill Food</th>
+            </tr>
+        </thead>
+        <tbody>
+            {food_chart_rows}
+        </tbody>
+    </table>;
 }

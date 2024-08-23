@@ -34,7 +34,7 @@ check_world_pos_to_pos(1, 0,  0, 1);
 check_world_pos_to_pos(0, 1,  1, 0);
 check_world_pos_to_pos(0, 2,  2, -1);
 
-enum Color {
+export enum Color {
     Red,
     Black,
 }
@@ -74,6 +74,7 @@ export class Sim {
     brains!: Insn[][];
     rng!: Rng;
     dir_offsets!: number[];
+    hill_food!: number[];
 
     constructor(args: typeof ALL_SIM_FIELDS) {
         Object.assign(this, args);
@@ -165,6 +166,7 @@ export class Sim {
             ants,
             brains,
             dir_offsets,
+            hill_food: [0, 0],
             rng: new Rng(seed),
         });
     }
@@ -246,6 +248,9 @@ export class Sim {
                 case "Drop": {
                     if (ant.has_food) {
                         cell.food++;
+                        if (cell.hill !== null) {
+                            this.hill_food[cell.hill]++;
+                        }
                         ant.has_food = false;
                     }
                     ant.state = insn.st;
@@ -256,6 +261,9 @@ export class Sim {
                         ant.state = insn.st2;
                     } else {
                         cell.food--;
+                        if (cell.hill !== null) {
+                            this.hill_food[cell.hill]--;
+                        }
                         ant.has_food = true;
                         ant.state = insn.st1;
                     }
@@ -328,7 +336,11 @@ export class Sim {
         if (enemy_count >= 5) {
             this.ants[cell.ant] = null;
             cell.ant = null;
-            cell.food += 3 + (ant.has_food ? 1 : 0);
+            let delta = 3 + (ant.has_food ? 1 : 0);
+            cell.food += delta;
+            if (cell.hill !== null) {
+                this.hill_food[cell.hill] += delta;
+            }
         }
     }
 }
