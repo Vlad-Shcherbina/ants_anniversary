@@ -5,6 +5,7 @@ import * as preact from "./vendor/preact/preact.js";
 import { useEffect, useState } from "./vendor/preact/hooks.js";
 import * as storage from "./storage.js";
 import { Lobby } from "./lobby.js";
+import { ViewGame } from "./game.js";
 import { hash_to_route, useLocationHash } from "./routing.js";
 
 function App(props: { db: IDBDatabase }) {
@@ -14,7 +15,13 @@ function App(props: { db: IDBDatabase }) {
         case "default": return <Lobby db={props.db}/>;
         case "ant": return <ViewAnt db={props.db} id={route.id}/>;
         case "world": return <ViewWorld name={route.name}/>;
-        case "game": return <div>TODO: game {JSON.stringify(route)}</div>;
+        case "game": return <ViewGame
+            db={props.db}
+            red_ant_id={route.red_ant_id}
+            black_ant_id={route.black_ant_id}
+            world_name={route.world_name}
+            seed={route.seed}
+            />
         default: never(route);
     }
 }
