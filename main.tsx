@@ -1,30 +1,19 @@
 import "./vendor/preact/debug.js"; // should be first
 
-import { bang } from "./assert.js";
+import { bang, never } from "./assert.js";
 import * as preact from "./vendor/preact/preact.js";
-import { useState, useEffect } from "./vendor/preact/hooks.js";
 import * as storage from "./storage.js";
 import { Lobby } from "./lobby.js";
-
-function useLocationHash() {
-    let [hash, set_hash] = useState(window.location.hash);
-    useEffect(() => {
-        let on_hashchange = () => set_hash(window.location.hash);
-        window.addEventListener("hashchange", on_hashchange);
-        return () => window.removeEventListener("hashchange", on_hashchange);
-    }, []);
-    if (hash.startsWith("#")) {
-        hash = hash.slice(1);
-    }
-    return hash;
-}
+import { hash_to_route, useLocationHash } from "./routing.js";
 
 function App(props: { db: IDBDatabase }) {
     let hash = useLocationHash();
-    if (hash === "") {
-        return <Lobby db={props.db}/>;
-    } else {
-        return <>Unknown hash: {hash}</>;
+    let route = hash_to_route(hash);
+    switch (route.type) {
+        case "default": return <Lobby db={props.db}/>;
+        case "ant": return <>Ant: {route.id}</>;
+        case "world": return <>World: {route.name}</>;
+        default: never(route);
     }
 }
 

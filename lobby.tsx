@@ -2,6 +2,7 @@ import { assert, bang } from "./assert.js";
 import * as preact from "./vendor/preact/preact.js";
 import { useState, useEffect, useCallback } from "./vendor/preact/hooks.js";
 import * as storage from "./storage.js";
+import { route_to_hash } from "./routing.js";
 
 function FileInput(props: { on_upload: (name: string, contents: string) => void }) {
     let { on_upload } = props;
@@ -68,7 +69,7 @@ export function Lobby(props: { db: IDBDatabase }) {
             <tbody>
                 {all_ants.map(ant => (
                     <tr key={ant.id}>
-                        <td><a href={ "#ant:" + ant.id }>{ant.name}</a></td>
+                        <td><a href={route_to_hash({ type: "ant", id: ant.id })}>{ant.name}</a></td>
                         <td>
                             <button onClick={async () => {
                                 await storage.delete_ant(db, ant.id);
@@ -120,7 +121,7 @@ export function Lobby(props: { db: IDBDatabase }) {
                                 onClick={() => set_selected_world(world)}
                             />
                         </td>
-                        <td><a href={"#world:" + world}>{world}</a></td>
+                        <td><a href={route_to_hash({ type: "world", name: world })}>{world}</a></td>
                     </tr>
                 ))}
             </tbody>
