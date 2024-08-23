@@ -306,7 +306,6 @@ export class Sim {
             case "Food": return cell.food > 0;
             case "FoeMarker": return cell.markers.some((m, c) => c !== ant_color && m !== 0);
             default: {
-                if (typeof cond === "string") throw cond; // TODO
                 let _: "Marker" = cond.type;
                 return (cell.markers[ant_color] & (1 << cond.marker)) !== 0;
             }
