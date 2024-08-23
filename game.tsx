@@ -33,7 +33,7 @@ type FoodChart = {
 
 export function ViewGame(props: GameProps) {
     let { db, red_ant_id, black_ant_id, world_name, seed } = props;
-    
+
     let [world, set_world] = useState<World | null>(null);
     useEffect(() => {
         (async () => {
@@ -43,7 +43,7 @@ export function ViewGame(props: GameProps) {
             set_world(parse_world(text));
         })();
     }, [world_name]);
-    
+
     let [brains, set_brains] = useState<Insn[][] | null>(null);
     useEffect(() => {
         (async () => {
@@ -52,27 +52,43 @@ export function ViewGame(props: GameProps) {
             set_brains([red_brain, black_brain]);
         })();
     }, [db, red_ant_id, black_ant_id]);
-    
+
     let [food_chart, set_food_chart] = useState<FoodChart>({ entries: [] });
 
     useEffect(() => {
         if (world === null || brains === null) return;
         let sim = Sim.create({ world, red_brain: brains[0], black_brain: brains[1], seed });
-        // TODO: spread simulation over time using setInterval() or something to improve responsiveness
-        console.time("run simulation");
-        let new_food_chart_entries: FoodChartEntry[] = [];
-        for (let i = 0; i < NUM_STEPS; i++) {
-            sim.step();
-            new_food_chart_entries.push({
-                red_hill_food: sim.hill_food[Color.Red],
-                black_hill_food: sim.hill_food[Color.Black],
-            });
+        let step_count = 0;
+        let timer_id: number | null = null;
+        function run_batch() {
+            const BATCH_SIZE = 10000;
+            console.time("run batch");
+            let new_food_chart_entries: FoodChartEntry[] = [];
+            for (let i = 0; i < BATCH_SIZE && step_count < NUM_STEPS; i++) {
+                sim.step();
+                new_food_chart_entries.push({
+                    red_hill_food: sim.hill_food[Color.Red],
+                    black_hill_food: sim.hill_food[Color.Black],
+                });
+                step_count++;
+            }
+            console.timeEnd("run batch");
+            set_food_chart(food_chart => {
+                food_chart.entries.push(...new_food_chart_entries);
+                return { ...food_chart };
+            })
+            if (step_count < NUM_STEPS) {
+                timer_id = setTimeout(run_batch, 0);
+            } else {
+                timer_id = null;
+            }
         }
-        console.timeEnd("run simulation");
-        set_food_chart(food_chart => {
-            food_chart.entries.push(...new_food_chart_entries);
-            return { ...food_chart };
-        })
+        timer_id = setTimeout(run_batch, 0);
+        return () => {
+            if (timer_id !== null) {
+                clearTimeout(timer_id);
+            }
+        };
     }, [brains, world, seed]);
 
     let food_chart_rows: preact.JSX.Element[] = [];
