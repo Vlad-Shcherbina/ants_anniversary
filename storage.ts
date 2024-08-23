@@ -42,6 +42,11 @@ export async function get_all_ants(db: IDBDatabase): Promise<Ant[]> {
     return await idb_async(tx.objectStore("ants").getAll());
 }
 
+export async function get_ant(db: IDBDatabase, id: string): Promise<Ant | undefined> {
+    let tx = db.transaction("ants", "readonly");
+    return await idb_async(tx.objectStore("ants").get(id));
+}
+
 export async function delete_ant(db: IDBDatabase, id: string) {
     let tx = db.transaction("ants", "readwrite");
     try {
