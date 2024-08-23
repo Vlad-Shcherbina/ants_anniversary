@@ -34,17 +34,21 @@ check_world_pos_to_pos(1, 0,  0, 1);
 check_world_pos_to_pos(0, 1,  1, 0);
 check_world_pos_to_pos(0, 2,  2, -1);
 
+enum Color {
+    Red,
+    Black,
+}
+
 type Cell = {
     is_rock: boolean,
     ant: number | null,
-    hill: "red" | "black" | null,
+    hill: Color | null,
     food: number,
-    red_markers: number,
-    black_markers: number,
+    markers: number[],
 }
 
 type Ant = {
-    color: "red" | "black",
+    color: Color,
     cell_idx: number;
     state: number,
     resting: number,
@@ -67,8 +71,7 @@ export class Sim {
     cells!: Cell[];
     wp_to_idx!: (WorldPos & { idx: number })[];
     ants!: (Ant | null)[]; // null means dead
-    red_brain!: Insn[];
-    black_brain!: Insn[];
+    brains!: Insn[][];
     rng!: Rng;
     dir_offsets!: number[];
 
@@ -79,7 +82,7 @@ export class Sim {
     static create(args: { world: World, red_brain: Insn[], black_brain: Insn[], seed: number }): Sim {
         let { world, red_brain, black_brain, seed } = args;
         let ants: Ant[] = [];
-        function add_ant(color: "red" | "black", cell_idx: number) {
+        function add_ant(color: Color, cell_idx: number) {
             ants.push({
                 color,
                 cell_idx,
@@ -105,8 +108,7 @@ export class Sim {
             ant: null,
             hill: null,
             food: 0,
-            red_markers: 0,
-            black_markers: 0,
+            markers: [0, 0],
         }));
         let wp_to_idx: (WorldPos & { idx: number })[] = [];
         for (let wp of world) {
@@ -118,12 +120,12 @@ export class Sim {
                 case "Rock": cell.is_rock = true; break;
                 case "Clear": break;
                 case "RedAnthill":
-                    cell.hill = "red";
-                    cell.ant = add_ant("red", idx);
+                    cell.hill = Color.Red;
+                    cell.ant = add_ant(Color.Red, idx);
                     break;
                 case "BlackAnthill":
-                    cell.hill = "black";
-                    cell.ant = add_ant("black", idx);
+                    cell.hill = Color.Black;
+                    cell.ant = add_ant(Color.Black, idx);
                     break;
                 default: {
                     let _: "Food" = wp.cell.type;
@@ -154,12 +156,14 @@ export class Sim {
             dir = { u: -w, v: -u }
         }
         assert(dir.u === 0 && dir.v === 1);
+        let brains: Insn[][] = [[], []];
+        brains[Color.Red] = red_brain;
+        brains[Color.Black] = black_brain;
         return new Sim({
             min_u, min_v, width, height, wp_to_idx,
             cells,
             ants,
-            red_brain,
-            black_brain,
+            brains,
             dir_offsets,
             rng: new Rng(seed),
         });
@@ -175,30 +179,25 @@ export class Sim {
             if (cell.food > 0) {
                 res += `${cell.food} food; `;
             }
-            if (cell.hill) {
-                res += `${cell.hill} hill; `;
+            if (cell.hill !== null) {
+                res += `${Color[cell.hill].toLowerCase()} hill; `;
             }
-            if (cell.red_markers > 0) {
-                res += "red marks: ";
-                for (let i = 0; i < 6; i++) {
-                    if (cell.red_markers & (1 << i)) {
-                        res += i;
+            for (let color of [Color.Red, Color.Black]) {
+                let marker = cell.markers[color];
+                if (marker > 0) {
+                    res += `${Color[color].toLowerCase()} marks: `;
+                    for (let i = 0; i < 6; i++) {
+                        if (marker & (1 << i)) {
+                            res += i;
+                        }
                     }
+                    res += "; ";
                 }
-                res += "; ";
-            }
-            if (cell.black_markers > 0) {
-                res += "black marks: ";
-                for (let i = 0; i < 6; i++) {
-                    if (cell.black_markers & (1 << i)) {
-                        res += i;
-                    }
-                }
-                res += "; ";
             }
             if (cell.ant !== null) {
                 let ant = bang(this.ants[cell.ant]);
-                res += `${ant.color} ant of id ${cell.ant}, dir ${ant.dir}, food ${ant.has_food ? 1 : 0}, state ${ant.state}, resting ${ant.resting}`;
+                let color = Color[ant.color].toLowerCase();
+                res += `${color} ant of id ${cell.ant}, dir ${ant.dir}, food ${ant.has_food ? 1 : 0}, state ${ant.state}, resting ${ant.resting}`;
             }
             return res;
         })
@@ -212,7 +211,7 @@ export class Sim {
                 ant.resting--;
                 continue;
             }
-            let brain = ant.color === "red" ? this.red_brain : this.black_brain;
+            let brain = this.brains[ant.color];
             let insn = brain[ant.state];
             let cell = this.cells[ant.cell_idx];
             switch (insn.type) {
@@ -263,24 +262,12 @@ export class Sim {
                     break;
                 }
                 case "Unmark": {
-                    if (ant.color === "red") {
-                        cell.red_markers &= ~(1 << insn.marker);
-                    } else if (ant.color === "black") {
-                        cell.black_markers &= ~(1 << insn.marker);
-                    } else {
-                        never(ant.color);
-                    }
+                    cell.markers[ant.color] &= ~(1 << insn.marker);
                     ant.state = insn.st;
                     break;
                 }
                 case "Mark": {
-                    if (ant.color === "red") {
-                        cell.red_markers |= 1 << insn.marker;
-                    } else if (ant.color === "black") {
-                        cell.black_markers |= 1 << insn.marker;
-                    } else {
-                        never(ant.color);
-                    }
+                    cell.markers[ant.color] |= 1 << insn.marker;
                     ant.state = insn.st;
                     break;
                 }
@@ -302,7 +289,7 @@ export class Sim {
         }
     }
     
-    check_condition(cell: Cell, cond: Cond, ant_color: "red" | "black") {
+    check_condition(cell: Cell, cond: Cond, ant_color: Color) {
         let ant: Ant | null;
         switch (cond) {
             case "Rock": return cell.is_rock;
@@ -317,18 +304,11 @@ export class Sim {
             case "Home": return cell.hill === ant_color;
             case "FoeHome": return cell.hill !== null && cell.hill !== ant_color;
             case "Food": return cell.food > 0;
-            case "FoeMarker": return ant_color === "red" && cell.black_markers !== 0 ||
-                ant_color === "black" && cell.red_markers !== 0;
+            case "FoeMarker": return cell.markers.some((m, c) => c !== ant_color && m !== 0);
             default: {
                 if (typeof cond === "string") throw cond; // TODO
                 let _: "Marker" = cond.type;
-                if (ant_color === "red") {
-                    return (cell.red_markers & (1 << cond.marker)) !== 0;
-                } else if (ant_color === "black") {
-                    return (cell.black_markers & (1 << cond.marker)) !== 0;
-                } else {
-                    never(ant_color);
-                }
+                return (cell.markers[ant_color] & (1 << cond.marker)) !== 0;
             }
         }
     }
@@ -338,12 +318,11 @@ export class Sim {
         if (cell.ant === null) return;
         
         let ant = bang(this.ants[cell.ant]);
-        let enemy_color = ant.color === "red" ? "black" : "red";
         let enemy_count = 0;
         
         for (let offset of this.dir_offsets) {
             let adjacent_cell = this.cells[cell_idx + offset];
-            if (adjacent_cell.ant !== null && this.ants[adjacent_cell.ant]?.color === enemy_color) {
+            if (adjacent_cell.ant !== null && bang(this.ants[adjacent_cell.ant]).color != ant.color) {
                 enemy_count++;
             }
         }
