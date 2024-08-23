@@ -9,6 +9,12 @@ type Route = {
 } | {
     type: "world",
     name: string,
+} | {
+    type: "game",
+    red_ant_id: string,
+    black_ant_id: string,
+    world_name: string,
+    seed: number,
 }
 
 export function route_to_hash(r: Route): string {

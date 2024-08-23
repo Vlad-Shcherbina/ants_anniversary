@@ -14,6 +14,7 @@ function App(props: { db: IDBDatabase }) {
         case "default": return <Lobby db={props.db}/>;
         case "ant": return <ViewAnt db={props.db} id={route.id}/>;
         case "world": return <ViewWorld name={route.name}/>;
+        case "game": return <div>TODO: game {JSON.stringify(route)}</div>;
         default: never(route);
     }
 }

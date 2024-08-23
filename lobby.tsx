@@ -156,7 +156,13 @@ export function Lobby(props: { db: IDBDatabase }) {
             title={errors.join("\n")}
             onClick={() => {
                 assert(errors.length === 0);
-                console.log("Run", red_ant_id, black_ant_id, selected_world);
+                window.location.hash = route_to_hash({
+                    type: "game",
+                    red_ant_id,
+                    black_ant_id,
+                    world_name: selected_world,
+                    seed: parseInt(seed),
+                });
             }}
             onMouseEnter={() => set_is_hovering(true)}
             onMouseLeave={() => set_is_hovering(false)}
