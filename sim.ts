@@ -75,6 +75,9 @@ export class Sim {
     rng!: Rng;
     dir_offsets!: number[];
     hill_food!: number[];
+    unclaimed_food!: number;
+    food_carried_by_ants!: number[];
+    ant_counts!: number[];
 
     constructor(args: typeof ALL_SIM_FIELDS) {
         Object.assign(this, args);
@@ -112,6 +115,8 @@ export class Sim {
             markers: [0, 0],
         }));
         let wp_to_idx: (WorldPos & { idx: number })[] = [];
+        let unclaimed_food = 0;
+        let ant_counts = [0, 0];
         for (let wp of world) {
             let pos = world_pos_to_pos(wp);
             let idx = (pos.u - min_u) * width + (pos.v - min_v);
@@ -123,14 +128,17 @@ export class Sim {
                 case "RedAnthill":
                     cell.hill = Color.Red;
                     cell.ant = add_ant(Color.Red, idx);
+                    ant_counts[Color.Red] += 1;
                     break;
                 case "BlackAnthill":
                     cell.hill = Color.Black;
                     cell.ant = add_ant(Color.Black, idx);
+                    ant_counts[Color.Black] += 1;
                     break;
                 default: {
                     let _: "Food" = wp.cell.type;
                     cell.food = wp.cell.count;
+                    unclaimed_food += wp.cell.count;
                 }
             }
         }
@@ -168,6 +176,9 @@ export class Sim {
             dir_offsets,
             hill_food: [0, 0],
             rng: new Rng(seed),
+            unclaimed_food,
+            food_carried_by_ants: [0, 0],
+            ant_counts,
         });
     }
 
@@ -204,7 +215,7 @@ export class Sim {
             return res;
         })
     }
-    
+
     step() {
         for (let ant_id = 0; ant_id < this.ants.length; ant_id++) {
             let ant = this.ants[ant_id];
@@ -237,7 +248,7 @@ export class Sim {
                         ant.cell_idx = new_cell_idx;
                         ant.state = insn.st1;
                         ant.resting = 14;
-                        
+
                         this.check_for_surrounded_ant(ant.cell_idx);
                         for (let offset of this.dir_offsets) {
                             this.check_for_surrounded_ant(ant.cell_idx + offset);
@@ -250,6 +261,7 @@ export class Sim {
                         cell.food++;
                         if (cell.hill !== null) {
                             this.hill_food[cell.hill]++;
+                            this.food_carried_by_ants[ant.color]--;
                         }
                         ant.has_food = false;
                     }
@@ -263,7 +275,10 @@ export class Sim {
                         cell.food--;
                         if (cell.hill !== null) {
                             this.hill_food[cell.hill]--;
+                        } else {
+                            this.unclaimed_food--;
                         }
+                        this.food_carried_by_ants[ant.color]++;
                         ant.has_food = true;
                         ant.state = insn.st1;
                     }
@@ -296,7 +311,7 @@ export class Sim {
             }
         }
     }
-    
+
     check_condition(cell: Cell, cond: Cond, ant_color: Color) {
         let ant: Ant | null;
         switch (cond) {
@@ -319,14 +334,14 @@ export class Sim {
             }
         }
     }
-    
+
     check_for_surrounded_ant(cell_idx: number): void {
         let cell = this.cells[cell_idx];
         if (cell.ant === null) return;
-        
+
         let ant = bang(this.ants[cell.ant]);
         let enemy_count = 0;
-        
+
         for (let offset of this.dir_offsets) {
             let adjacent_cell = this.cells[cell_idx + offset];
             if (adjacent_cell.ant !== null && bang(this.ants[adjacent_cell.ant]).color != ant.color) {
@@ -336,10 +351,15 @@ export class Sim {
         if (enemy_count >= 5) {
             this.ants[cell.ant] = null;
             cell.ant = null;
+            if (ant.has_food) {
+                this.food_carried_by_ants[ant.color]--;
+            }
             let delta = 3 + (ant.has_food ? 1 : 0);
             cell.food += delta;
             if (cell.hill !== null) {
                 this.hill_food[cell.hill] += delta;
+            } else {
+                this.unclaimed_food += delta;
             }
         }
     }

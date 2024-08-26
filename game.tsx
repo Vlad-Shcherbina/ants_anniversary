@@ -20,6 +20,9 @@ const NUM_STEPS = 100000;
 
 type FoodChartEntry = {
     red_hill_food: number,
+    red_ant_food: number,
+    unclaimed_food: number,
+    black_ant_food: number,
     black_hill_food: number,
 }
 
@@ -69,6 +72,9 @@ export function ViewGame(props: GameProps) {
                 sim.step();
                 new_food_chart_entries.push({
                     red_hill_food: sim.hill_food[Color.Red],
+                    red_ant_food: sim.food_carried_by_ants[Color.Red],
+                    unclaimed_food: sim.unclaimed_food,
+                    black_ant_food: sim.food_carried_by_ants[Color.Black],
                     black_hill_food: sim.hill_food[Color.Black],
                 });
                 step_count++;
@@ -130,8 +136,7 @@ function Timeline(props: { food_chart: FoodChart }) {
         zones.push({
             priority: -Infinity,
             paint: () => {
-                ctx.fillStyle = "yellow";
-                ctx.fillRect(0, 0, width, height);
+                ctx.clearRect(0, 0, width, height);
             },
         });
         zones.push({
@@ -141,10 +146,33 @@ function Timeline(props: { food_chart: FoodChart }) {
                     let step = Math.floor(NUM_STEPS * x / width);
                     if (step >= food_chart.entries.length) break;
                     let entry = food_chart.entries[step];
-                    ctx.fillStyle = "red";
-                    ctx.fillRect(x, entry.red_hill_food, 1, 1);
-                    ctx.fillStyle = "black";
-                    ctx.fillRect(x, height - 1 - entry.black_hill_food, 1, 1);
+                    let total = entry.red_hill_food + entry.black_hill_food + entry.red_ant_food + entry.black_ant_food + entry.unclaimed_food;
+                    let y = 0;
+                    let y1 = y + height * entry.red_hill_food / total;
+                    ctx.fillStyle = "#f00";
+                    ctx.fillRect(x, y, 1, y1);
+                    y = y1;
+
+                    ctx.fillStyle = "#c54";
+                    y1 = y + height * entry.red_ant_food / total;
+                    ctx.fillRect(x, y, 1, y1);
+                    y = y1;
+
+                    ctx.fillStyle = "#1f1";
+                    y1 = y + height * entry.unclaimed_food / total;
+                    ctx.fillRect(x, y, 1, y1);
+                    y = y1;
+
+                    ctx.fillStyle = "#454";
+                    y1 = y + height * entry.black_ant_food / total;
+                    ctx.fillRect(x, y, 1, y1);
+                    y = y1;
+
+                    y1 = y + height * entry.black_hill_food / total;
+                    ctx.fillStyle = "#000";
+                    ctx.fillRect(x, y, 1, y1);
+
+                    assert(Math.abs(y1 - height) < 1e-2);
                 }
             },
         });
