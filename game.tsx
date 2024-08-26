@@ -5,7 +5,8 @@ import * as storage from "./storage.js";
 import { type World, parse_world } from "./cartography.js";
 import { type Insn, parse_brain } from "./brain.js";
 import { Sim, Color } from "./sim.js";
-
+import { type Zone } from "./rez.js";
+import { RezCanvas } from "./rez_preact.js";
 
 type GameProps = {
     db: IDBDatabase,
@@ -101,16 +102,56 @@ export function ViewGame(props: GameProps) {
         </tr>);
     });
 
-    return <table>
-        <thead>
-            <tr>
-                <th>Step</th>
-                <th>Red Hill Food</th>
-                <th>Black Hill Food</th>
-            </tr>
-        </thead>
-        <tbody>
-            {food_chart_rows}
-        </tbody>
-    </table>;
+    return <>
+        <Timeline food_chart={food_chart}/>
+        <table>
+            <thead>
+                <tr>
+                    <th>Step</th>
+                    <th>Red Hill Food</th>
+                    <th>Black Hill Food</th>
+                </tr>
+            </thead>
+            <tbody>
+                {food_chart_rows}
+            </tbody>
+        </table>
+    </>
+}
+
+type HoverDetail = { key: string };
+
+function Timeline(props: { food_chart: FoodChart }) {
+    let { food_chart } = props;
+    function ui_fn(canvas: HTMLCanvasElement) {
+        let zones: Zone<HoverDetail>[] = [];
+        let ctx = bang(canvas.getContext("2d"));
+        let { width, height } = canvas;
+        zones.push({
+            priority: -Infinity,
+            paint: () => {
+                ctx.fillStyle = "yellow";
+                ctx.fillRect(0, 0, width, height);
+            },
+        });
+        zones.push({
+            priority: 0,
+            paint() {
+                for (let x = 0; x < width; x++) {
+                    let step = Math.floor(NUM_STEPS * x / width);
+                    if (step >= food_chart.entries.length) break;
+                    let entry = food_chart.entries[step];
+                    ctx.fillStyle = "red";
+                    ctx.fillRect(x, entry.red_hill_food, 1, 1);
+                    ctx.fillStyle = "black";
+                    ctx.fillRect(x, height - 1 - entry.black_hill_food, 1, 1);
+                }
+            },
+        });
+        return zones;
+    }
+    return <RezCanvas ui_fn={ui_fn} style={{
+        width: "100%",
+        height: "150px",
+    }} />;
 }
