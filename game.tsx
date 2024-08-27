@@ -139,17 +139,18 @@ export function ViewGame(props: GameProps) {
         if (current_state === null) return;
         let { step } = current_state;
         let on_key_down = (e: KeyboardEvent) => {
+            let delta = 0;
             if (e.key === "ArrowRight") {
                 e.preventDefault();
-                if (step < food_chart.entries.length) {
-                    set_current_step(step + 1);
-                }
+                delta = 1;
             } else if (e.key === "ArrowLeft") {
                 e.preventDefault();
-                if (step > 0) {
-                    set_current_step(step - 1);
-                }
+                delta = -1;
             }
+            if (e.shiftKey) {
+                delta *= 14;
+            }
+            set_current_step(Math.max(0, Math.min(step + delta, food_chart.entries.length)))
         };
         document.addEventListener("keydown", on_key_down);
         return () => {
