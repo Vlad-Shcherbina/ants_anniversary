@@ -397,7 +397,6 @@ export class Rng {
         this.state = BigInt(seed);
         for (let i = 0; i < 3; i++) {
             this.state = (this.state * 22695477n + 1n) & 0x3fffffffn;
-            console.log(this.state);
         }
     }
 

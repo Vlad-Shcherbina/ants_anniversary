@@ -1,4 +1,4 @@
-import { assert, bang } from "./assert.js";
+import { assert, bang, never } from "./assert.js";
 import * as preact from "./vendor/preact/preact.js";
 import { useCallback, useEffect, useState } from "./vendor/preact/hooks.js";
 import * as storage from "./storage.js";
@@ -59,17 +59,36 @@ export function ViewGame(props: GameProps) {
     }, [db, red_ant_id, black_ant_id]);
 
     let [food_chart, set_food_chart] = useState<FoodChart>({ entries: [] });
+    let [key_frames, set_key_frames] = useState<{ step: number, sim: Sim }[]>([]);
 
     let [current_state, set_current_state] = useState<{ step: number, sim: Sim } | null>(null);
     let set_current_step = useCallback((new_step: number) => {
         set_current_state(current_state => {
             assert(current_state !== null);
+            let key = null;
+            for (let kf of key_frames) {
+                if (kf.step > new_step) break;
+                key = kf;
+            }
+            assert(key !== null);
+            if (current_state.step <= new_step && current_state.step > key.step) {
+                key = {
+                    step: current_state.step,
+                    sim: current_state.sim,
+                };
+            }
+            assert(new_step >= key.step);
+            let sim = key.sim.clone();
+            assert(new_step >= key.step);
+            for (let i = 0; i < new_step - key.step; i++) {
+                sim.step();
+            }
             return {
                 step: new_step,
-                sim: current_state.sim, // TODO
+                sim,
             };
         });
-    }, []);
+    }, [key_frames]);
 
     useEffect(() => {
         if (world === null || brains === null) return;
@@ -81,7 +100,11 @@ export function ViewGame(props: GameProps) {
             const BATCH_SIZE = 10000;
             console.time("run batch");
             let new_food_chart_entries: FoodChartEntry[] = [];
+            let new_key_frames: { step: number, sim: Sim }[] = [];
             for (let i = 0; i < BATCH_SIZE && step_count < NUM_STEPS; i++) {
+                if (i % 1000 === 0) {
+                    new_key_frames.push({ step: step_count, sim: sim.clone() });
+                }
                 sim.step();
                 new_food_chart_entries.push({
                     red_hill_food: sim.hill_food[Color.Red],
@@ -97,6 +120,7 @@ export function ViewGame(props: GameProps) {
                 food_chart.entries.push(...new_food_chart_entries);
                 return { ...food_chart };
             })
+            set_key_frames(key_frames => [...key_frames, ...new_key_frames]);
             if (step_count < NUM_STEPS) {
                 timer_id = setTimeout(run_batch, 0);
             } else {
@@ -183,12 +207,22 @@ function Board(props: { state: { step: number, sim: Sim } }) {
             paint: () => {
                 let { offset_x, offset_y, scale } = rez_state;
                 for (let { idx } of sim.wp_to_idx) {
+                    let y = Math.floor(idx / sim.width) * scale;
+                    let x = idx % sim.width * scale + y / 2;
+                    x += offset_x;
+                    y += offset_y;
                     if (sim.cells[idx].is_rock) {
-                        let y = Math.floor(idx / sim.width) * scale;
-                        let x = idx % sim.width * scale + y / 2;
-                        x += offset_x;
-                        y += offset_y;
-                        ctx.fillStyle = "black";
+                        ctx.fillStyle = "gray";
+                        ctx.fillRect(x, y, scale * 0.9, scale * 0.9);
+                    }
+                    let ant_idx = sim.cells[idx].ant;
+                    if (ant_idx !== null) {
+                        let ant = bang(sim.ants[ant_idx]);
+                        switch (ant.color) {
+                            case Color.Red: ctx.fillStyle = "red"; break;
+                            case Color.Black: ctx.fillStyle = "black"; break;
+                            default: never(ant.color);
+                        }
                         ctx.fillRect(x, y, scale * 0.9, scale * 0.9);
                     }
                 }
