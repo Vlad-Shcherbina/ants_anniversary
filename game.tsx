@@ -146,32 +146,89 @@ export function ViewGame(props: GameProps) {
 function Board(props: { state: { step: number, sim: Sim } }) {
     let { state } = props;
     let { sim } = state;
-    type HoverDetail = { key: string };
+    type HoverDetail = { key: string, drag_x: number, drag_y: number };
+
+    type RezState = {
+        offset_x: number,
+        offset_y: number,
+        scale: number,
+        dragging: null | { start_x: number, start_y: number },
+    };
+    let [rez_state, set_rez_state] = useState<RezState>({
+        offset_x: 0,
+        offset_y: 0,
+        scale: 10,
+        dragging: null,
+    });
+
     let ui_fn = (canvas: HTMLCanvasElement) => {
         let zones: Zone<HoverDetail>[] = [];
         let ctx = bang(canvas.getContext("2d"));
         let { width, height } = canvas;
         zones.push({
             priority: -Infinity,
-            paint: () => {
+            paint: ({ hover_detail }) => {
+                ctx.setTransform(1, 0, 0, 1, 0, 0);
                 ctx.clearRect(0, 0, width, height);
                 ctx.fillStyle = "yellow";
                 ctx.fillRect(0, 0, width, height);
+                if (hover_detail !== null) {
+                    let { drag_x, drag_y } = hover_detail;
+                    ctx.translate(drag_x, drag_y);
+                }
             },
         });
         zones.push({
             priority: 0,
             paint: () => {
+                let { offset_x, offset_y, scale } = rez_state;
                 for (let { idx } of sim.wp_to_idx) {
                     if (sim.cells[idx].is_rock) {
-                        let y = Math.floor(idx / sim.width) * 10;
-                        let x = idx % sim.width * 10 + y / 2;
+                        let y = Math.floor(idx / sim.width) * scale;
+                        let x = idx % sim.width * scale + y / 2;
+                        x += offset_x;
+                        y += offset_y;
                         ctx.fillStyle = "black";
-                        ctx.fillRect(x, y, 8, 8);
+                        ctx.fillRect(x, y, scale * 0.9, scale * 0.9);
                     }
                 }
             },
         });
+        if (rez_state.dragging === null) {
+            zones.push({
+                priority: 0,
+                hitbox: () => true,
+                on_left_mouse_down: ({ x, y }) => {
+                    console.log("begin drag");
+                    set_rez_state(rez_state => ({ ...rez_state, dragging: { start_x: x, start_y: y } }));
+                },
+            });
+        } else {
+            zones.push({
+                priority: +Infinity,
+                hitbox: () => true,
+                get_hover_detail(x, y) {
+                    let { dragging } = rez_state;
+                    if (dragging === null) return null;
+                    let { start_x, start_y } = dragging;
+                    let drag_x = x - start_x;
+                    let drag_y = y - start_y;
+                    return { key: `drag_${drag_x}_${drag_y}`, drag_x, drag_y };
+                },
+                on_left_mouse_up({ x, y }) {
+                    let { dragging } = rez_state;
+                    if (dragging === null) return;
+                    console.log("end drag");
+                    let { start_x, start_y } = dragging;
+                    set_rez_state({
+                        offset_x: rez_state.offset_x + x - start_x,
+                        offset_y: rez_state.offset_y + y - start_y,
+                        scale: rez_state.scale,
+                        dragging: null,
+                    });
+                },
+            })
+        };
         return zones;
     };
     return <RezCanvas ui_fn={ui_fn} style={{flexGrow: 1, alignSelf: "stretch" }} />
