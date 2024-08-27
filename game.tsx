@@ -179,11 +179,31 @@ function Board(props: { state: { step: number, sim: Sim } }) {
         scale: number,
         dragging: null | { start_x: number, start_y: number },
     };
-    let [rez_state, set_rez_state] = useState<RezState>({
-        offset_x: 0,
-        offset_y: 0,
-        scale: 10,
-        dragging: null,
+    let [rez_state, set_rez_state] = useState<RezState>(() => {
+        let min_x = +Infinity;
+        let min_y = +Infinity;
+        let max_x = -Infinity;
+        let max_y = -Infinity;
+        for (let { idx } of sim.wp_to_idx) {
+            let col = idx % sim.width;
+            let row = Math.floor(idx / sim.width);
+            let x = col + row / 2;
+            let y = row;
+            min_x = Math.min(min_x, x);
+            min_y = Math.min(min_y, y);
+            max_x = Math.max(max_x, x);
+            max_y = Math.max(max_y, y);
+        }
+        let scale = 10;
+        // TODO: to compute initial scale we need canvas size (resolution),
+        // it's tricky to obtain given that canvas is created later
+        // and resolution is updated further downstream with resize observer
+        return {
+            offset_x: -min_x * scale,
+            offset_y: -min_y * scale,
+            scale: 10,
+            dragging: null,
+        };
     });
 
     let ui_fn = (canvas: HTMLCanvasElement) => {
@@ -208,8 +228,12 @@ function Board(props: { state: { step: number, sim: Sim } }) {
             paint: () => {
                 let { offset_x, offset_y, scale } = rez_state;
                 for (let { idx } of sim.wp_to_idx) {
-                    let y = Math.floor(idx / sim.width) * scale;
-                    let x = idx % sim.width * scale + y / 2;
+                    let col = idx % sim.width;
+                    let row = Math.floor(idx / sim.width);
+                    let x = col + row / 2;
+                    let y = row;
+                    x *= scale;
+                    y *= scale;
                     x += offset_x;
                     y += offset_y;
                     if (sim.cells[idx].is_rock) {
