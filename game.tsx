@@ -7,6 +7,7 @@ import { type Insn, parse_brain } from "./brain.js";
 import { Sim, Color } from "./sim.js";
 import { type Zone } from "./rez.js";
 import { RezCanvas } from "./rez_preact.js";
+import { update_tooltip } from "./tooltip.js";
 
 type GameProps = {
     db: IDBDatabase,
@@ -125,7 +126,7 @@ export function ViewGame(props: GameProps) {
     </>
 }
 
-type HoverDetail = { key: string };
+type HoverDetail = { key: string, step: number };
 
 function Timeline(props: { food_chart: FoodChart }) {
     let { food_chart } = props;
@@ -141,7 +142,22 @@ function Timeline(props: { food_chart: FoodChart }) {
         });
         zones.push({
             priority: 0,
-            paint() {
+            hitbox: () => true,
+            get_hover_detail (x: number, _y: number): HoverDetail | null {
+                let step = Math.floor(NUM_STEPS * x / width);
+                if (step >= 0 && step < food_chart.entries.length) {
+                    return { key: "" + step, step };
+                } else {
+                    return null;
+                }
+            },
+            tooltip: ({hover_detail}) => {
+                if (hover_detail === null) return null;
+                let { step } = hover_detail;
+                let entry = food_chart.entries[step];
+                return `step: ${step}<br>red hill food: ${entry.red_hill_food}<br>black hill food: ${entry.black_hill_food}`;
+            },
+            paint({hover_detail}) {
                 for (let x = 0; x < width; x++) {
                     let step = Math.floor(NUM_STEPS * x / width);
                     if (step >= food_chart.entries.length) break;
@@ -174,11 +190,20 @@ function Timeline(props: { food_chart: FoodChart }) {
 
                     assert(Math.abs(y1 - height) < 1e-2);
                 }
+                if (hover_detail) {
+                    let y = Math.round(hover_detail.step * width / NUM_STEPS) + 0.5;
+                    ctx.strokeStyle = "#fff";
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(y, 0);
+                    ctx.lineTo(y, height);
+                    ctx.stroke();
+                }
             },
         });
         return zones;
     }
-    return <RezCanvas ui_fn={ui_fn} style={{
+    return <RezCanvas ui_fn={ui_fn} update_tooltip={update_tooltip} style={{
         width: "100%",
         height: "150px",
     }} />;

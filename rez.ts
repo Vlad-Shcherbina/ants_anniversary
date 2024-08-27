@@ -26,7 +26,7 @@ export type Rez<HoverDetail extends { key: string }> = {
 export type Zone<HoverDetail extends { key: string }> = {
     hitbox?: (x: number, y: number) => boolean,
     priority: number,
-    tooltip?: string,
+    tooltip?: (args: { x: number, y: number, hover_detail: HoverDetail | null}) => string | null,
     cursor?: string,
     paint?: (args: {
         hovered: boolean,
@@ -57,7 +57,7 @@ export function create_rez<HoverDetail extends { key: string}>(
             if (z.tooltip) {
                 assert(!!options?.update_tooltip);
             }
-            if (z.tooltip || z.on_left_mouse_down || z.cursor) {
+            if (z.tooltip || z.on_left_mouse_down || z.cursor || z.get_hover_detail) {
                 assert(!!z.hitbox);
             }
         }
@@ -112,7 +112,11 @@ export function create_rez<HoverDetail extends { key: string}>(
     function state_updated() {
         czones = compute_zones();
         [hovered_zone, hover_detail] = compute_hovered_zone();
-        let tooltip = hovered_zone?.tooltip || null;
+        let tooltip = null;
+        if (hovered_zone?.tooltip) {
+            assert(mouse_pos !== null);
+            tooltip = hovered_zone.tooltip({ x: mouse_pos.x, y: mouse_pos.y, hover_detail });
+        }
         options?.update_tooltip?.(null, tooltip);
         let cursor = hovered_zone?.cursor || "auto";
         canvas.style.cursor = cursor;
@@ -164,13 +168,17 @@ export function create_rez<HoverDetail extends { key: string}>(
             let cursor = hovered_zone?.cursor || "auto";
             canvas.style.cursor = cursor;
         }
-        let tooltip = hovered_zone?.tooltip || null;
+        let tooltip = null;
+        if (hovered_zone?.tooltip) {
+            tooltip = hovered_zone.tooltip({ x: mouse_pos.x, y: mouse_pos.y, hover_detail });
+        }
         options?.update_tooltip?.(e, tooltip);
     };
     canvas.onpointerleave = e => {
         mouse_pos = null;
         if (hovered_zone !== null) {
             hovered_zone = null;
+            hover_detail = null;
             request_repaint();
         }
         let tooltip = null;
