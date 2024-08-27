@@ -56,6 +56,10 @@ type Ant = {
     has_food: boolean,
 }
 
+function clone_cell(cell: Cell): Cell {
+    return { ...cell, markers: [...cell.markers] };
+}
+
 // A trick to avoid constructor boilerplate.
 // Spread operator extracts all fields, but omits methods.
 // It can't be used directly in the `typeof` context, so we introduce a constant,
@@ -81,6 +85,27 @@ export class Sim {
 
     constructor(args: typeof ALL_SIM_FIELDS) {
         Object.assign(this, args);
+    }
+
+    clone(): Sim {
+        // mutable parts are deeply copied,
+        // constant parts are shallow copied
+        return new Sim({
+            min_u: this.min_u,
+            min_v: this.min_v,
+            width: this.width,
+            height: this.height,
+            cells: this.cells.map(clone_cell),
+            wp_to_idx: this.wp_to_idx,
+            ants: this.ants.map(ant => ant === null ? null : { ...ant }),
+            brains: this.brains,
+            rng: this.rng.clone(),
+            dir_offsets: this.dir_offsets,
+            hill_food: [...this.hill_food],
+            unclaimed_food: this.unclaimed_food,
+            food_carried_by_ants: [...this.food_carried_by_ants],
+            ant_counts: [...this.ant_counts],
+        });
     }
 
     static create(args: { world: World, red_brain: Insn[], black_brain: Insn[], seed: number }): Sim {
@@ -374,6 +399,12 @@ export class Rng {
             this.state = (this.state * 22695477n + 1n) & 0x3fffffffn;
             console.log(this.state);
         }
+    }
+
+    clone(): Rng {
+        let res = new Rng(0);
+        res.state = this.state;
+        return res;
     }
 
     random_int(n: number): number {

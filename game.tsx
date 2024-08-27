@@ -1,6 +1,6 @@
 import { assert, bang } from "./assert.js";
 import * as preact from "./vendor/preact/preact.js";
-import { useEffect, useState } from "./vendor/preact/hooks.js";
+import { useCallback, useEffect, useState } from "./vendor/preact/hooks.js";
 import * as storage from "./storage.js";
 import { type World, parse_world } from "./cartography.js";
 import { type Insn, parse_brain } from "./brain.js";
@@ -60,9 +60,21 @@ export function ViewGame(props: GameProps) {
 
     let [food_chart, set_food_chart] = useState<FoodChart>({ entries: [] });
 
+    let [current_state, set_current_state] = useState<{ step: number, sim: Sim } | null>(null);
+    let set_current_step = useCallback((new_step: number) => {
+        set_current_state(current_state => {
+            assert(current_state !== null);
+            return {
+                step: new_step,
+                sim: current_state.sim, // TODO
+            };
+        });
+    }, []);
+
     useEffect(() => {
         if (world === null || brains === null) return;
         let sim = Sim.create({ world, red_brain: brains[0], black_brain: brains[1], seed });
+        set_current_state({ step: 0, sim: sim.clone() });
         let step_count = 0;
         let timer_id: number | null = null;
         function run_batch() {
@@ -99,19 +111,19 @@ export function ViewGame(props: GameProps) {
         };
     }, [brains, world, seed]);
 
-    let [current_step, set_current_step] = useState(0);
-
     useEffect(() => {
+        if (current_state === null) return;
+        let { step } = current_state;
         let on_key_down = (e: KeyboardEvent) => {
             if (e.key === "ArrowRight") {
                 e.preventDefault();
-                if (current_step < food_chart.entries.length) {
-                    set_current_step(current_step + 1);
+                if (step < food_chart.entries.length) {
+                    set_current_step(step + 1);
                 }
             } else if (e.key === "ArrowLeft") {
                 e.preventDefault();
-                if (current_step > 0) {
-                    set_current_step(current_step - 1);
+                if (step > 0) {
+                    set_current_step(step - 1);
                 }
             }
         };
@@ -119,21 +131,59 @@ export function ViewGame(props: GameProps) {
         return () => {
             document.removeEventListener("keydown", on_key_down);
         };
-    }, [current_step, food_chart.entries.length]);
+    }, [current_state, food_chart.entries.length, set_current_step]);
 
-    return <>
-        <Timeline food_chart={food_chart} current_step={current_step} set_current_step={set_current_step} />
-        Current step: {current_step}
-    </>
+    if (current_state === null) {
+        return <></>;
+    }
+    return <div style={{ display: "flex", flexDirection: "column", height: "90vh" }}>
+        <Timeline food_chart={food_chart} current_step={current_state.step} set_current_step={set_current_step} />
+        Current step: {current_state.step}
+        <Board state={current_state} />
+    </div>;
 }
 
-type HoverDetail = { key: string, step: number };
+function Board(props: { state: { step: number, sim: Sim } }) {
+    let { state } = props;
+    let { sim } = state;
+    type HoverDetail = { key: string };
+    let ui_fn = (canvas: HTMLCanvasElement) => {
+        let zones: Zone<HoverDetail>[] = [];
+        let ctx = bang(canvas.getContext("2d"));
+        let { width, height } = canvas;
+        zones.push({
+            priority: -Infinity,
+            paint: () => {
+                ctx.clearRect(0, 0, width, height);
+                ctx.fillStyle = "yellow";
+                ctx.fillRect(0, 0, width, height);
+            },
+        });
+        zones.push({
+            priority: 0,
+            paint: () => {
+                for (let { idx } of sim.wp_to_idx) {
+                    if (sim.cells[idx].is_rock) {
+                        let y = Math.floor(idx / sim.width) * 10;
+                        let x = idx % sim.width * 10 + y / 2;
+                        ctx.fillStyle = "black";
+                        ctx.fillRect(x, y, 8, 8);
+                    }
+                }
+            },
+        });
+        return zones;
+    };
+    return <RezCanvas ui_fn={ui_fn} style={{flexGrow: 1, alignSelf: "stretch" }} />
+}
 
 function Timeline(props: {
     food_chart: FoodChart,
     current_step: number,
     set_current_step: (step: number) => void,
 }) {
+    type HoverDetail = { key: string, step: number };
+
     let { food_chart, current_step, set_current_step } = props;
     function ui_fn(canvas: HTMLCanvasElement) {
         let zones: Zone<HoverDetail>[] = [];
