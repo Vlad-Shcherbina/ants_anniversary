@@ -99,17 +99,27 @@ export function ViewGame(props: GameProps) {
         };
     }, [brains, world, seed]);
 
-    let food_chart_rows: preact.JSX.Element[] = [];
-    food_chart.entries.forEach((entry, i) => {
-        if (i % 1000 !== 0) return;
-        food_chart_rows.push(<tr key={i}>
-            <td>{i}</td>
-            <td>{entry.red_hill_food}</td>
-            <td>{entry.black_hill_food}</td>
-        </tr>);
-    });
-
     let [current_step, set_current_step] = useState(0);
+
+    useEffect(() => {
+        let on_key_down = (e: KeyboardEvent) => {
+            if (e.key === "ArrowRight") {
+                e.preventDefault();
+                if (current_step < food_chart.entries.length) {
+                    set_current_step(current_step + 1);
+                }
+            } else if (e.key === "ArrowLeft") {
+                e.preventDefault();
+                if (current_step > 0) {
+                    set_current_step(current_step - 1);
+                }
+            }
+        };
+        document.addEventListener("keydown", on_key_down);
+        return () => {
+            document.removeEventListener("keydown", on_key_down);
+        };
+    }, [current_step, food_chart.entries.length]);
 
     return <>
         <Timeline food_chart={food_chart} current_step={current_step} set_current_step={set_current_step} />
