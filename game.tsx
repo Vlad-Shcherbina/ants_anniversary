@@ -109,27 +109,22 @@ export function ViewGame(props: GameProps) {
         </tr>);
     });
 
+    let [current_step, set_current_step] = useState(0);
+
     return <>
-        <Timeline food_chart={food_chart}/>
-        <table>
-            <thead>
-                <tr>
-                    <th>Step</th>
-                    <th>Red Hill Food</th>
-                    <th>Black Hill Food</th>
-                </tr>
-            </thead>
-            <tbody>
-                {food_chart_rows}
-            </tbody>
-        </table>
+        <Timeline food_chart={food_chart} current_step={current_step} set_current_step={set_current_step} />
+        Current step: {current_step}
     </>
 }
 
 type HoverDetail = { key: string, step: number };
 
-function Timeline(props: { food_chart: FoodChart }) {
-    let { food_chart } = props;
+function Timeline(props: {
+    food_chart: FoodChart,
+    current_step: number,
+    set_current_step: (step: number) => void,
+}) {
+    let { food_chart, current_step, set_current_step } = props;
     function ui_fn(canvas: HTMLCanvasElement) {
         let zones: Zone<HoverDetail>[] = [];
         let ctx = bang(canvas.getContext("2d"));
@@ -156,6 +151,12 @@ function Timeline(props: { food_chart: FoodChart }) {
                 let { step } = hover_detail;
                 let entry = food_chart.entries[step];
                 return `step: ${step}<br>red hill food: ${entry.red_hill_food}<br>black hill food: ${entry.black_hill_food}`;
+            },
+            on_left_mouse_down({ hover_detail }) {
+                if (hover_detail !== null) {
+                    let { step } = hover_detail;
+                    set_current_step(step);
+                }
             },
             paint({hover_detail}) {
                 for (let x = 0; x < width; x++) {
@@ -190,14 +191,23 @@ function Timeline(props: { food_chart: FoodChart }) {
 
                     assert(Math.abs(y1 - height) < 1e-2);
                 }
+                let y = Math.round(current_step * width / NUM_STEPS) + 0.5;
+                ctx.strokeStyle = "#fff";
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(y, 0);
+                ctx.lineTo(y, height);
+                ctx.stroke();
                 if (hover_detail) {
                     let y = Math.round(hover_detail.step * width / NUM_STEPS) + 0.5;
                     ctx.strokeStyle = "#fff";
+                    ctx.setLineDash([2, 2]);
                     ctx.lineWidth = 1;
                     ctx.beginPath();
                     ctx.moveTo(y, 0);
                     ctx.lineTo(y, height);
                     ctx.stroke();
+                    ctx.setLineDash([]);
                 }
             },
         });

@@ -42,7 +42,7 @@ export type Zone<HoverDetail extends { key: string }> = {
 
     // No need to call state_updated() in handlers.
     // It's implied that they change state.
-    on_left_mouse_down?: (args: { x: number, y: number }) => void,
+    on_left_mouse_down?: (args: { x: number, y: number, hover_detail: HoverDetail | null }) => void,
     on_left_mouse_up?: (args: { x: number, y: number, hover_detail: HoverDetail | null }) => void,
 }
 
@@ -138,7 +138,7 @@ export function create_rez<HoverDetail extends { key: string}>(
         if (e.button === 0) {
             let handler = hovered_zone?.on_left_mouse_down;
             if (handler) {
-                handler(mouse_pos);
+                handler({ ...mouse_pos, hover_detail });
                 state_updated();
             }
         }
