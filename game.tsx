@@ -1,12 +1,12 @@
 import { assert, bang, never } from "./assert.js";
 import * as preact from "./vendor/preact/preact.js";
-import { useCallback, useEffect, useState } from "./vendor/preact/hooks.js";
+import { useCallback, useEffect, useRef, useState } from "./vendor/preact/hooks.js";
 import * as storage from "./storage.js";
 import { type World, parse_world } from "./cartography.js";
 import { type Insn, parse_brain } from "./brain.js";
 import { Sim, Color } from "./sim.js";
 import { type Zone } from "./rez.js";
-import { RezCanvas } from "./rez_preact.js";
+import { RezCanvas, type RezCanvasRef } from "./rez_preact.js";
 import { update_tooltip } from "./tooltip.js";
 
 type GameProps = {
@@ -290,7 +290,34 @@ function Board(props: { state: { step: number, sim: Sim } }) {
         };
         return zones;
     };
-    return <RezCanvas ui_fn={ui_fn} style={{flexGrow: 1, alignSelf: "stretch" }} />
+    let ref = useRef<RezCanvasRef<HoverDetail>>(null);
+    function on_wheel(e: WheelEvent) {
+        let delta: number;
+        switch (e.deltaMode) {
+            case e.DOM_DELTA_PIXEL:
+                console.log("DOM_DELTA_PIXEL", e.deltaY);
+                delta = e.deltaY;
+                break;
+            case e.DOM_DELTA_LINE:
+                console.log("DOM_DELTA_LINE", e.deltaY);
+                delta = e.deltaY * 18;
+                break;
+            default:
+                assert(false);
+        }
+        if (ref.current === null) return;
+        console.log(ref.current);
+        let rez = ref.current.rez;
+        let { x, y } = rez.scale_mouse_coords(e);
+        let scale = Math.exp(-delta / 300);
+        set_rez_state({
+            offset_x: rez_state.offset_x * scale + x * (1 - scale),
+            offset_y: rez_state.offset_y * scale + y * (1 - scale),
+            scale: rez_state.scale * scale,
+            dragging: rez_state.dragging,
+        });
+    }
+    return <RezCanvas ref2={ref} ui_fn={ui_fn} style={{ flexGrow: 1, alignSelf: "stretch" }} onWheel={on_wheel} />
 }
 
 function Timeline(props: {

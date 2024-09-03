@@ -20,6 +20,7 @@ export type Rez<HoverDetail extends { key: string }> = {
     // Call it after any change to state that happens outside zone handlers.
     state_updated: () => void,
     set_ui_fn: (ui_fn: () => Zone<HoverDetail>[]) => void,
+    scale_mouse_coords: (e: MouseEvent) => { x: number, y: number },
     destroy: () => void,
 }
 
@@ -201,7 +202,7 @@ export function create_rez<HoverDetail extends { key: string}>(
         state_updated();
     }
 
-    let rez = { state_updated, destroy, set_ui_fn };
+    let rez = { state_updated, destroy, set_ui_fn, scale_mouse_coords };
     request_repaint();
     return rez;
 }

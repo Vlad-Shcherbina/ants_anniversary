@@ -4,14 +4,20 @@ import { useEffect,  useLayoutEffect, useRef } from "./vendor/preact/hooks.js";
 
 import { create_rez, type Rez, type Zone } from "./rez.js";
 
+export type RezCanvasRef<HoverDetail extends { key: string }> = {
+    canvas: HTMLCanvasElement,
+    rez: Rez<HoverDetail>,
+};
+
 type RezCanvasProps<HoverDetail extends { key: string }> =
-preact.JSX.HTMLAttributes<HTMLCanvasElement> & {
+Omit<preact.JSX.HTMLAttributes<HTMLCanvasElement>, "ref"> & {
     ui_fn: (canvas: HTMLCanvasElement) => Zone<HoverDetail>[],
     update_tooltip?: (e: MouseEvent| null, s: string | null) => void,
+    ref2?: preact.RefObject<RezCanvasRef<HoverDetail>>,
 };
 
 export function RezCanvas<HoverDetail extends { key: string }>(props: RezCanvasProps<HoverDetail>) {
-    let { ui_fn, update_tooltip, ...canvas_props } = props;
+    let { ui_fn, update_tooltip, ref2, ...canvas_props } = props;
     let canvas_ref = useRef<HTMLCanvasElement>(null);
     let rez_ref = useRef<Rez<HoverDetail>>(null);
     useLayoutEffect(() => {
@@ -59,6 +65,13 @@ export function RezCanvas<HoverDetail extends { key: string }>(props: RezCanvasP
         // Otherwise when dragging to a monitor with different DPR,
         // the resolution is not updated.
     }, []);
+
+    // Preact doesn't have useImperativeHandle(),
+    // so we forward the ref manually.
+    useLayoutEffect(() => {
+        if (!ref2) return;
+        ref2.current = { canvas: bang(canvas_ref.current), rez: bang(rez_ref.current) };
+    }, [ref2]);
 
     return <canvas {...canvas_props} ref={canvas_ref} />;
 }
