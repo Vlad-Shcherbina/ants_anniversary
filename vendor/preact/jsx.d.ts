@@ -198,11 +198,6 @@ export namespace JSXInternal {
 			| SignalLike<number | string | undefined>;
 		attributeName?: string | undefined | SignalLike<string | undefined>;
 		attributeType?: string | undefined | SignalLike<string | undefined>;
-		autoReverse?:
-			| number
-			| string
-			| undefined
-			| SignalLike<number | string | undefined>;
 		azimuth?:
 			| number
 			| string
@@ -1195,8 +1190,15 @@ export namespace JSXInternal {
 			| string
 			| undefined
 			| SignalLike<number | string | undefined>;
+		'text-rendering'?:
+			| number
+			| string
+			| undefined
+			| SignalLike<number | string | undefined>;
 		to?: number | string | undefined | SignalLike<number | string | undefined>;
 		transform?: string | undefined | SignalLike<string | undefined>;
+		transformOrigin?: string | undefined | SignalLike<string | undefined>;
+		'transform-origin'?: string | undefined | SignalLike<string | undefined>;
 		u1?: number | string | undefined | SignalLike<number | string | undefined>;
 		u2?: number | string | undefined | SignalLike<number | string | undefined>;
 		underlinePosition?:
@@ -2399,7 +2401,6 @@ export namespace JSXInternal {
 		slot?: string | undefined | SignalLike<string | undefined>;
 		span?: number | undefined | SignalLike<number | undefined>;
 		spellcheck?: boolean | undefined | SignalLike<boolean | undefined>;
-		spellCheck?: boolean | undefined | SignalLike<boolean | undefined>;
 		src?: string | undefined | SignalLike<string | undefined>;
 		srcSet?: string | undefined | SignalLike<string | undefined>;
 		srcset?: string | undefined | SignalLike<string | undefined>;

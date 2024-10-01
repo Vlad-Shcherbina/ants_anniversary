@@ -5,7 +5,7 @@ set -u
 set -o pipefail
 set -x
 
-VERSION=10.23.2
+VERSION=10.24.1
 curl -LO https://github.com/preactjs/preact/releases/download/$VERSION/preact-$VERSION.tgz
 tar -xzf preact-$VERSION.tgz
 
