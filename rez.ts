@@ -20,7 +20,6 @@ export type Rez<HoverDetail extends { key: string }> = {
     // Call it after any change to state that happens outside zone handlers.
     state_updated: () => void,
     set_ui_fn: (ui_fn: () => Zone<HoverDetail>[]) => void,
-    scale_mouse_coords: (e: MouseEvent) => { x: number, y: number },
     destroy: () => void,
 }
 
@@ -45,6 +44,14 @@ export type Zone<HoverDetail extends { key: string }> = {
     // It's implied that they change state.
     on_left_mouse_down?: (args: { x: number, y: number, hover_detail: HoverDetail | null }) => void,
     on_left_mouse_up?: (args: { x: number, y: number, hover_detail: HoverDetail | null }) => void,
+}
+
+export function scale_mouse_coords(canvas: HTMLCanvasElement, e: MouseEvent) {
+    let rect = canvas.getBoundingClientRect();
+    return {
+        x: e.offsetX * canvas.width / rect.width,
+        y: e.offsetY * canvas.height / rect.height,
+    }
 }
 
 export function create_rez<HoverDetail extends { key: string}>(
@@ -124,17 +131,9 @@ export function create_rez<HoverDetail extends { key: string}>(
         request_repaint();
     }
 
-    function scale_mouse_coords(e: MouseEvent) {
-        let rect = canvas.getBoundingClientRect();
-        return {
-            x: e.offsetX * canvas.width / rect.width,
-            y: e.offsetY * canvas.height / rect.height,
-        }
-    }
-
     canvas.onpointerdown = e => {
         canvas.setPointerCapture(e.pointerId);
-        mouse_pos = scale_mouse_coords(e);
+        mouse_pos = scale_mouse_coords(canvas, e);
         [hovered_zone, hover_detail] = compute_hovered_zone();
         if (e.button === 0) {
             let handler = hovered_zone?.on_left_mouse_down;
@@ -147,7 +146,7 @@ export function create_rez<HoverDetail extends { key: string}>(
 
     canvas.onpointerup = e => {
         canvas.releasePointerCapture(e.pointerId);
-        mouse_pos = scale_mouse_coords(e);
+        mouse_pos = scale_mouse_coords(canvas, e);
         [hovered_zone, hover_detail] = compute_hovered_zone();
         if (e.button === 0) {
             let handler = hovered_zone?.on_left_mouse_up;
@@ -159,7 +158,7 @@ export function create_rez<HoverDetail extends { key: string}>(
     };
 
     canvas.onpointermove = e => {
-        mouse_pos = scale_mouse_coords(e);
+        mouse_pos = scale_mouse_coords(canvas, e);
         let [new_hovered_zone, new_hover_detail] = compute_hovered_zone();
         if (hovered_zone !== new_hovered_zone || hover_detail?.key !== new_hover_detail?.key) {
             hovered_zone = new_hovered_zone;
@@ -202,7 +201,7 @@ export function create_rez<HoverDetail extends { key: string}>(
         state_updated();
     }
 
-    let rez = { state_updated, destroy, set_ui_fn, scale_mouse_coords };
+    let rez = { state_updated, destroy, set_ui_fn };
     request_repaint();
     return rez;
 }

@@ -5,7 +5,7 @@ import * as storage from "./storage.js";
 import { type World, parse_world } from "./cartography.js";
 import { type Insn, parse_brain } from "./brain.js";
 import { Sim, Color } from "./sim.js";
-import { type Zone } from "./rez.js";
+import { scale_mouse_coords, type Zone } from "./rez.js";
 import { RezCanvas, type RezCanvasRef } from "./rez_preact.js";
 import { update_tooltip } from "./tooltip.js";
 
@@ -307,8 +307,7 @@ function Board(props: { state: { step: number, sim: Sim } }) {
         }
         if (ref.current === null) return;
         console.log(ref.current);
-        let rez = ref.current.rez;
-        let { x, y } = rez.scale_mouse_coords(e);
+        let { x, y } = scale_mouse_coords(ref.current.canvas, e);
         let scale = Math.exp(-delta / 300);
         set_rez_state({
             offset_x: rez_state.offset_x * scale + x * (1 - scale),
