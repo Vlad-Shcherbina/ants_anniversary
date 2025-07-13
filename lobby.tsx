@@ -3,6 +3,7 @@ import * as preact from "./vendor/preact/preact.js";
 import { useState, useEffect, useCallback } from "./vendor/preact/hooks.js";
 import * as storage from "./storage.js";
 import { route_to_hash } from "./routing.js";
+import { parse_brain } from "./brain.js";
 
 function FileInput(props: { on_upload: (name: string, contents: string) => void }) {
     let { on_upload } = props;
@@ -99,6 +100,7 @@ export function Lobby(props: { db: IDBDatabase }) {
             if (name.endsWith(".ant")) {
                 name = name.slice(0, -4);
             }
+            parse_brain(contents); // validate
             let id = await storage.compute_ant_id(contents);
             let ant = { id, name, source: contents };
             let added = await storage.add_ant(db, ant);
