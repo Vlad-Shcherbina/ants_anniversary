@@ -286,8 +286,10 @@ export class Sim {
                         cell.food++;
                         if (cell.hill !== null) {
                             this.hill_food[cell.hill]++;
-                            this.food_carried_by_ants[ant.color]--;
+                        } else {
+                            this.unclaimed_food++;
                         }
+                        this.food_carried_by_ants[ant.color]--;
                         ant.has_food = false;
                     }
                     ant.state = insn.st;
