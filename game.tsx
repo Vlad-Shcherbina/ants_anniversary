@@ -161,7 +161,7 @@ export function ViewGame(props: GameProps) {
     if (current_state === null) {
         return <></>;
     }
-    return <div style={{ display: "flex", flexDirection: "column", height: "90vh" }}>
+    return <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
         <Timeline food_chart={food_chart} current_step={current_state.step} set_current_step={set_current_step} />
         Current step: {current_state.step}
         <Board state={current_state} />
