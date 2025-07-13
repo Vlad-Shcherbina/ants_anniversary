@@ -1,13 +1,7 @@
 {
-    "compilerOptions": {
-        "strict": true,
-        "target": "ESNext",
-        "module": "es6",
-        "sourceMap": true,
-        "jsx": "react",
-        "jsxFactory": "preact.h",
-        "jsxFragmentFactory": "preact.Fragment",
-        "verbatimModuleSyntax": true,
-    },
-    "exclude": ["vendor/preact/package/**"],
+    "files": [],
+    "references": [
+        { "path": "./tsconfig.app.json" },
+        { "path": "./tsconfig.node.json" }
+    ]
 }
