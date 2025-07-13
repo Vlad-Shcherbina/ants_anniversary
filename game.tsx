@@ -248,6 +248,20 @@ function Board(props: { state: { step: number, sim: Sim } }) {
                         hex_path(ctx, cx, cy, size);
                         ctx.fill();
                     }
+                    for (let color of [Color.Red, Color.Black]) {
+                        let m = sim.cells[idx].markers[color];
+                        if (m == 0) { continue; }
+                        let base_x = color === Color.Red ? x + scale * 0.1 : x + scale * 0.5;
+                        let base_y = color === Color.Red ? y + scale * 0.1 : y + scale * 0.6;
+                        ctx.strokeStyle = ctx.fillStyle = color === Color.Red ? "rgba(255, 0, 0, 0.5)" : "rgba(0, 0, 0, 0.5)";
+                        ctx.lineWidth = scale / 30;
+                        ctx.strokeRect(base_x, base_y, scale * 0.3, scale * 0.2);
+                        for (let i = 0; i < 6; i++) {
+                            if (m & (1 << i)) {
+                                ctx.fillRect(base_x + (i % 3) * scale * 0.1, base_y + Math.floor(i / 3) * scale * 0.1, scale * 0.1, scale * 0.1);
+                            }
+                        }
+                    }
                     let ant_idx = sim.cells[idx].ant;
                     if (ant_idx !== null) {
                         let ant = bang(sim.ants[ant_idx]);
