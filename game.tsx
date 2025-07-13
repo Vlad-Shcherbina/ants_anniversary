@@ -240,6 +240,14 @@ function Board(props: { state: { step: number, sim: Sim } }) {
                         ctx.fillStyle = "gray";
                         ctx.fillRect(x, y, scale * 0.9, scale * 0.9);
                     }
+                    if (sim.cells[idx].food > 0) {
+                        let cx = x + scale * 0.9 / 2;
+                        let cy = y + scale * 0.9 / 2;
+                        ctx.fillStyle = "#0c0";
+                        let size = Math.sqrt(sim.cells[idx].food / 10) * scale;
+                        hex_path(ctx, cx, cy, size);
+                        ctx.fill();
+                    }
                     let ant_idx = sim.cells[idx].ant;
                     if (ant_idx !== null) {
                         let ant = bang(sim.ants[ant_idx]);
@@ -248,7 +256,9 @@ function Board(props: { state: { step: number, sim: Sim } }) {
                             case Color.Black: ctx.fillStyle = "black"; break;
                             default: never(ant.color);
                         }
-                        ctx.fillRect(x, y, scale * 0.9, scale * 0.9);
+                        let cx = x + scale * 0.9 / 2;
+                        let cy = y + scale * 0.9 / 2;
+                        draw_ant(ctx, { x: cx, y: cy, dir: ant.dir, color: ctx.fillStyle, has_food: ant.has_food, size: scale * 1.5 });
                     }
                 }
             },
@@ -352,7 +362,7 @@ function Timeline(props: {
                 if (hover_detail === null) return null;
                 let { step } = hover_detail;
                 let entry = food_chart.entries[step];
-                return `step: ${step}<br>red hill food: ${entry.red_hill_food}<br>black hill food: ${entry.black_hill_food}`;
+                return `step: ${step}<br>red hill food: ${entry.red_hill_food}<br>black hill food: ${entry.black_hill_food}<br>${JSON.stringify(entry)}`;
             },
             on_left_mouse_down({ hover_detail }) {
                 if (hover_detail !== null) {
@@ -420,3 +430,62 @@ function Timeline(props: {
         height: "150px",
     }} />;
 }
+
+function draw_ant(
+    ctx: CanvasRenderingContext2D,
+    { x, y, dir, color, has_food, size }:
+    { x: number; y: number; dir: number; color: string; has_food: boolean; size: number; }
+) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(size, size);
+    ctx.rotate(dir * Math.PI / 3);
+
+    if (has_food) {
+        ctx.fillStyle = '#0c0';
+        hex_path(ctx, 0.2, 0, 0.2);
+        ctx.fill();
+    }
+
+    ctx.fillStyle = color;
+    if (size > 15) {
+        ctx.beginPath();
+        ctx.ellipse(-0.2, 0, 0.13, 0.09, 0, 0, 2 * Math.PI);
+        ctx.ellipse(0, 0, 0.07, 0.05, 0, 0, 2 * Math.PI);
+        ctx.ellipse(0.12, 0, 0.05, 0.07, 0, 0, 2 * Math.PI);
+        ctx.fill();
+
+        ctx.lineWidth = 0.02;
+        ctx.strokeStyle = color;
+        ctx.beginPath();
+        for (let sign = -1; sign <= 1; sign += 2) {
+            ctx.moveTo(0.0, 0);
+            ctx.lineTo(-0.2, 0.2 * sign);
+            ctx.moveTo(0.03, 0);
+            ctx.lineTo(-0.1, 0.2 * sign);
+            ctx.moveTo(0, 0);
+            ctx.lineTo(0.15, 0.15 * sign);
+        }
+        ctx.stroke();
+    } else {
+        ctx.fillRect(-0.3, -0.1, 0.5, 0.2);
+    }
+
+    ctx.restore();
+}
+
+
+function hex_path(ctx: CanvasRenderingContext2D, x: number, y: number, size: number) {
+    ctx.beginPath();
+    let w = H_SCALE * size * 0.5;
+    let s = size * 0.25;
+    ctx.moveTo(x - w, y - s);
+    ctx.lineTo(x - w, y + s);
+    ctx.lineTo(x, y + 2 * s);
+    ctx.lineTo(x + w, y + s);
+    ctx.lineTo(x + w, y - s);
+    ctx.lineTo(x, y - 2 * s);
+    ctx.closePath();
+}
+
+const H_SCALE = Math.sqrt(3) * 0.5;
