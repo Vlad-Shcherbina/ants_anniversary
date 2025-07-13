@@ -316,7 +316,7 @@ function Board(props: { state: { step: number, sim: Sim } }) {
             dragging: rez_state.dragging,
         });
     }
-    return <RezCanvas ref2={ref} ui_fn={ui_fn} style={{ flexGrow: 1, alignSelf: "stretch" }} onWheel={on_wheel} />
+    return <RezCanvas ref2={ref} ui_fn={ui_fn} style={{ flexGrow: 1, alignSelf: "stretch", minHeight: "0" }} onWheel={on_wheel} />
 }
 
 function Timeline(props: {
