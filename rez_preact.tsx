@@ -56,7 +56,9 @@ export function RezCanvas<HoverDetail extends { key: string }>(props: RezCanvasP
             // but repaint only happens in next animation frame.
             bang(rez_ref.current).state_updated();
         }
-        let resize_observer = new ResizeObserver(update_resolution);
+        // requestAnimationFrame() helps to avoid "ResizeObserver loop completed with undelivered notifications" errors
+        // https://stackoverflow.com/a/76714495
+        let resize_observer = new ResizeObserver(() => requestAnimationFrame(update_resolution));
         resize_observer.observe(canvas);
         update_resolution();
         return () => resize_observer.disconnect();
